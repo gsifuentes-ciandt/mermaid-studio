@@ -248,7 +248,7 @@ The app supports multiple languages:
 
 This project is automatically deployed to Netlify from the `main` branch.
 
-Visit: [https://your-site-name.netlify.app](https://your-site-name.netlify.app)
+Visit: [https://mermaid-studio.netlify.app](https://mermaid-studio.netlify.app)
 
 ---
 
