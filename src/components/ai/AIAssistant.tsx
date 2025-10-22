@@ -11,7 +11,15 @@ export const AIAssistant = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isMobile, setIsMobile] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Reset exit state when opening
+  useEffect(() => {
+    if (isOpen) {
+      setIsExiting(false);
+    }
+  }, [isOpen]);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -75,17 +83,36 @@ export const AIAssistant = () => {
     setIsResizing(true);
   };
 
+  const handleClose = () => {
+    setIsExiting(true);
+    // Wait for animation to complete before actually closing
+    setTimeout(() => {
+      close();
+      setIsExiting(false);
+    }, 300); // Match animation duration
+  };
+
   return (
-    <div
-      ref={containerRef}
-      className="fixed bottom-6 right-6 z-50 flex flex-col rounded-lg bg-white shadow-2xl ring-2 ring-primary-500/20 dark:bg-gray-900 dark:ring-primary-400/30 md:bottom-6 md:right-6 max-md:inset-0 max-md:bottom-0 max-md:right-0 max-md:rounded-none"
-      style={{
-        width: isMobile && !isCollapsed ? '100%' : isCollapsed ? '320px' : `${size.width}px`,
-        height: isMobile && !isCollapsed ? '100%' : isCollapsed ? '56px' : `${size.height}px`,
-        transition: isCollapsed ? 'all 0.2s' : 'none',
-        boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.1), 0 10px 10px -5px rgba(99, 102, 241, 0.04), 0 0 40px -10px rgba(99, 102, 241, 0.2)',
-      }}
-    >
+    <>
+      {/* Backdrop with blur effect - only on mobile */}
+      {isMobile && !isCollapsed && (
+        <div 
+          className={`fixed inset-0 z-40 bg-black/20 backdrop-blur-sm ${isExiting ? 'animate-fade-out' : 'animate-fade-in'}`}
+          onClick={handleClose}
+        />
+      )}
+      
+      {/* AI Assistant Panel */}
+      <div
+        ref={containerRef}
+        className={`fixed bottom-6 right-6 z-50 flex flex-col rounded-lg bg-white shadow-2xl ring-2 ring-primary-500/20 dark:bg-gray-900 dark:ring-primary-400/30 md:bottom-6 md:right-6 max-md:inset-0 max-md:bottom-0 max-md:right-0 max-md:rounded-none ${isExiting ? 'animate-slide-out-right' : 'animate-slide-in-right'}`}
+        style={{
+          width: isMobile && !isCollapsed ? '100%' : isCollapsed ? '320px' : `${size.width}px`,
+          height: isMobile && !isCollapsed ? '100%' : isCollapsed ? '56px' : `${size.height}px`,
+          transition: isCollapsed ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+          boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.1), 0 10px 10px -5px rgba(99, 102, 241, 0.04), 0 0 40px -10px rgba(99, 102, 241, 0.2)',
+        }}
+      >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 p-4 dark:border-gray-700">
         <div className="flex items-center gap-2">
@@ -112,7 +139,7 @@ export const AIAssistant = () => {
             )}
           </button>
           <button
-            onClick={close}
+            onClick={handleClose}
             className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
             title="Close"
           >
@@ -148,5 +175,6 @@ export const AIAssistant = () => {
         />
       )}
     </div>
+    </>
   );
 };
