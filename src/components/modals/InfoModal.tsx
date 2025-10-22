@@ -2,6 +2,7 @@ import { Calendar, Tag, Code, Globe, Users, Zap } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { useUIStore } from '@/store/uiStore';
 import { useDiagramStore } from '@/store/diagramStore';
+import { useI18n } from '@/contexts/I18nContext';
 import type { Diagram } from '@/types/diagram.types';
 
 const typeIcons: Record<string, JSX.Element> = {
@@ -23,19 +24,21 @@ const typeColors: Record<string, string> = {
 };
 
 function EndpointDetails({ diagram }: { diagram: Diagram }) {
+  const { t } = useI18n();
+  
   return (
     <div className="space-y-6">
       {/* HTTP Method & Path */}
       {(diagram.httpMethod || diagram.endpointPath) && (
-        <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4">
-          <h3 className="mb-3 flex items-center gap-2 text-lg font-bold text-green-900">
+        <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 dark:border-green-700 dark:bg-green-900/20">
+          <h3 className="mb-3 flex items-center gap-2 text-lg font-bold text-green-900 dark:text-green-300">
             <Globe className="h-5 w-5" />
-            Endpoint Information
+            {t('info.endpoint.title')}
           </h3>
           <div className="space-y-2">
             {diagram.httpMethod && (
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-green-800">Method:</span>
+                <span className="font-semibold text-green-800 dark:text-green-300">{t('info.endpoint.method')}:</span>
                 <span className="rounded-full bg-green-600 px-3 py-1 text-sm font-bold text-white">
                   {diagram.httpMethod}
                 </span>
@@ -43,8 +46,8 @@ function EndpointDetails({ diagram }: { diagram: Diagram }) {
             )}
             {diagram.endpointPath && (
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-green-800">Path:</span>
-                <code className="rounded bg-green-100 px-3 py-1 font-mono text-sm text-green-900">
+                <span className="font-semibold text-green-800 dark:text-green-300">{t('info.endpoint.path')}:</span>
+                <code className="rounded bg-green-100 px-3 py-1 font-mono text-sm text-green-900 dark:bg-green-800 dark:text-green-100">
                   {diagram.endpointPath}
                 </code>
               </div>
@@ -55,22 +58,22 @@ function EndpointDetails({ diagram }: { diagram: Diagram }) {
 
       {/* Request Payloads */}
       {diagram.requestPayloads && diagram.requestPayloads.length > 0 && (
-        <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
-          <h3 className="mb-3 text-lg font-bold text-blue-900">📥 Request Payloads</h3>
+        <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+          <h3 className="mb-3 text-lg font-bold text-blue-900 dark:text-blue-300">📥 {t('endpoint.request.title')}</h3>
           <div className="space-y-3">
             {diagram.requestPayloads.map((payload, index) => (
-              <div key={index} className="rounded-lg bg-white p-3 shadow-sm">
+              <div key={index} className="rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="rounded bg-blue-600 px-2 py-0.5 text-xs font-bold text-white">
                     #{index + 1}
                   </span>
                   {payload.status && (
-                    <span className="text-sm font-semibold text-blue-900">{payload.status}</span>
+                    <span className="text-sm font-semibold text-blue-900 dark:text-blue-300">{payload.status}</span>
                   )}
-                  <span className="ml-auto text-xs text-gray-600">{payload.contentType}</span>
+                  <span className="ml-auto text-xs text-gray-600 dark:text-gray-400">{payload.contentType}</span>
                 </div>
                 {payload.json && (
-                  <pre className="overflow-x-auto rounded bg-gray-100 p-2 text-xs">
+                  <pre className="overflow-x-auto rounded bg-gray-100 p-2 text-xs dark:bg-gray-900 dark:text-gray-300">
                     <code>{payload.json}</code>
                   </pre>
                 )}
@@ -82,8 +85,8 @@ function EndpointDetails({ diagram }: { diagram: Diagram }) {
 
       {/* Response Payloads */}
       {diagram.responsePayloads && diagram.responsePayloads.length > 0 && (
-        <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
-          <h3 className="mb-3 text-lg font-bold text-purple-900">📤 Response Payloads</h3>
+        <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-4 dark:border-purple-700 dark:bg-purple-900/20">
+          <h3 className="mb-3 text-lg font-bold text-purple-900 dark:text-purple-300">📤 {t('endpoint.response.title')}</h3>
           <div className="space-y-3">
             {diagram.responsePayloads.map((payload, index) => {
               const statusCode = parseInt(payload.status);
@@ -96,15 +99,15 @@ function EndpointDetails({ diagram }: { diagram: Diagram }) {
                 : 'bg-yellow-600';
 
               return (
-                <div key={index} className="rounded-lg bg-white p-3 shadow-sm">
+                <div key={index} className="rounded-lg bg-white p-3 shadow-sm dark:bg-gray-800">
                   <div className="mb-2 flex items-center gap-2">
                     <span className={`rounded px-2 py-0.5 text-xs font-bold text-white ${statusColor}`}>
                       {payload.status}
                     </span>
-                    <span className="ml-auto text-xs text-gray-600">{payload.contentType}</span>
+                    <span className="ml-auto text-xs text-gray-600 dark:text-gray-400">{payload.contentType}</span>
                   </div>
                   {payload.json && (
-                    <pre className="overflow-x-auto rounded bg-gray-100 p-2 text-xs">
+                    <pre className="overflow-x-auto rounded bg-gray-100 p-2 text-xs dark:bg-gray-900 dark:text-gray-300">
                       <code>{payload.json}</code>
                     </pre>
                   )}
@@ -119,13 +122,15 @@ function EndpointDetails({ diagram }: { diagram: Diagram }) {
 }
 
 function WorkflowDetails({ diagram }: { diagram: Diagram }) {
+  const { t } = useI18n();
+  
   return (
     <div className="space-y-4">
       {diagram.workflowActors && (
         <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
           <h3 className="mb-2 flex items-center gap-2 text-lg font-bold text-blue-900">
             <Users className="h-5 w-5" />
-            Actors/Participants
+            {t('workflow.actors')}
           </h3>
           <p className="text-blue-800">{diagram.workflowActors}</p>
         </div>
@@ -135,7 +140,7 @@ function WorkflowDetails({ diagram }: { diagram: Diagram }) {
         <div className="rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
           <h3 className="mb-2 flex items-center gap-2 text-lg font-bold text-purple-900">
             <Zap className="h-5 w-5" />
-            Trigger Event
+            {t('workflow.trigger')}
           </h3>
           <p className="text-purple-800">{diagram.workflowTrigger}</p>
         </div>
@@ -145,6 +150,7 @@ function WorkflowDetails({ diagram }: { diagram: Diagram }) {
 }
 
 export function InfoModal(): JSX.Element | null {
+  const { t } = useI18n();
   const { isOpen, diagramId } = useUIStore((state) => state.infoModal);
   const closeInfoModal = useUIStore((state) => state.closeInfoModal);
   const diagrams = useDiagramStore((state) => state.diagrams);
@@ -157,7 +163,7 @@ export function InfoModal(): JSX.Element | null {
   const typeIcon = typeIcons[diagram.type] || typeIcons.other;
 
   return (
-    <Modal isOpen={isOpen} onClose={closeInfoModal} title="Diagram Details" size="lg">
+    <Modal isOpen={isOpen} onClose={closeInfoModal} title={t('info.title')} size="lg">
       <div className="space-y-6">
         {/* Header Card */}
         <div className={`rounded-xl bg-gradient-to-r ${typeColor} p-6 text-white shadow-lg`}>
@@ -176,7 +182,7 @@ export function InfoModal(): JSX.Element | null {
           <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
             <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
               <Calendar className="h-4 w-4" />
-              Created
+              {t('info.created')}
             </div>
             <div className="text-sm text-gray-900 dark:text-white">
               {new Date(diagram.createdAt).toLocaleDateString()}
@@ -185,7 +191,7 @@ export function InfoModal(): JSX.Element | null {
           <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
             <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
               <Calendar className="h-4 w-4" />
-              Updated
+              {t('info.updated')}
             </div>
             <div className="text-sm text-gray-900 dark:text-white">
               {new Date(diagram.updatedAt).toLocaleDateString()}
@@ -198,7 +204,7 @@ export function InfoModal(): JSX.Element | null {
           <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
             <div className="mb-2 flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300">
               <Tag className="h-4 w-4" />
-              Tags
+              {t('info.tags')}
             </div>
             <div className="flex flex-wrap gap-2">
               {diagram.tags.split(',').map((tag, index) => (
@@ -221,7 +227,7 @@ export function InfoModal(): JSX.Element | null {
         <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700">
           <div className="mb-2 flex items-center gap-2 font-semibold text-gray-700 dark:text-gray-300">
             <Code className="h-4 w-4" />
-            Mermaid Code
+            {t('info.code')}
           </div>
           <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-sm text-green-400">
             <code>{diagram.code}</code>

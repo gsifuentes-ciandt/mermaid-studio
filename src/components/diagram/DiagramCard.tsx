@@ -1,10 +1,13 @@
-import { Edit, Trash2, Info, Download, ZoomIn } from 'lucide-react';
+import { Edit, Trash2, Info, Download, ZoomIn, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import type { Diagram } from '@/types/diagram.types';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useUIStore } from '@/store/uiStore';
+import { useAIStore } from '@/store/aiStore';
 import { useMermaidRenderer } from '@/hooks/useMermaidRenderer';
 import { exportDiagramSvg, exportDiagramPng } from '@/services/export.service';
+import { ConfirmModal } from '@/components/ui/ConfirmModal';
+import { useI18n } from '@/contexts/I18nContext';
 import toast from 'react-hot-toast';
 
 interface DiagramCardProps {
@@ -21,11 +24,14 @@ const typeColors: Record<string, string> = {
 };
 
 export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
+  const { t } = useI18n();
   const deleteDiagram = useDiagramStore((state) => state.deleteDiagram);
   const openDiagramModal = useUIStore((state) => state.openDiagramModal);
   const openInfoModal = useUIStore((state) => state.openInfoModal);
   const openZoomModal = useUIStore((state) => state.openZoomModal);
+  const { open: openAI, setContextDiagram } = useAIStore();
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { svg, error, isLoading } = useMermaidRenderer(diagram.code);
 
@@ -34,10 +40,12 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
   };
 
   const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete "${diagram.title}"?`)) {
-      deleteDiagram(diagram.name);
-      toast.success('Diagram deleted');
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    deleteDiagram(diagram.name);
+    toast.success('Diagram deleted');
   };
 
   const handleInfo = () => {
@@ -46,6 +54,15 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
 
   const handleZoom = () => {
     openZoomModal(diagram.name);
+  };
+
+  const handleAIEdit = () => {
+    setContextDiagram({
+      name: diagram.name,
+      title: diagram.title,
+      code: diagram.code,
+      type: diagram.type,
+    });
   };
 
   const handleExportSVG = () => {
@@ -70,8 +87,7 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
   };
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl bg-white shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl dark:bg-gray-800 dark:shadow-gray-900/50">
-      {/* Header */}
+    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md transition-all hover:shadow-xl dark:border-gray-700 dark:bg-gray-800">
       <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -90,66 +106,21 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
             {diagram.description && (
               <p className="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400">{diagram.description}</p>
             )}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          <button
-            onClick={handleEdit}
-            className="flex items-center justify-center rounded-lg border-2 border-amber-500 bg-white p-2 text-amber-500 transition hover:bg-amber-50 dark:bg-gray-800 dark:hover:bg-amber-950"
-            title="Edit Diagram"
-          >
-            <Edit size={18} />
-          </button>
-          <button
-            onClick={handleDelete}
-            className="flex items-center justify-center rounded-lg border-2 border-red-500 bg-white p-2 text-red-500 transition hover:bg-red-50 dark:bg-gray-800 dark:hover:bg-red-950"
-            title="Delete Diagram"
-          >
-            <Trash2 size={18} />
-          </button>
-          <button
-            onClick={handleInfo}
-            className="flex items-center justify-center rounded-lg border-2 border-blue-500 bg-white p-2 text-blue-500 transition hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-blue-950"
-            title="View Info"
-          >
-            <Info size={18} />
-          </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowExportMenu(!showExportMenu)}
-              className="flex w-full items-center justify-center rounded-lg border-2 border-green-500 bg-white p-2 text-green-500 transition hover:bg-green-50 dark:bg-gray-800 dark:hover:bg-green-950"
-              title="Export"
-            >
-              <Download size={18} />
-            </button>
-            {showExportMenu && (
-              <div className="absolute right-0 top-full z-10 mt-2 w-32 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
-                <button
-                  onClick={handleExportSVG}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
-                >
-                  Export SVG
-                </button>
-                <button
-                  onClick={handleExportPNG}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
-                >
-                  Export PNG
-                </button>
-              </div>
-            )}
+            {/* Timestamps */}
+            <div className="mt-2 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-500">
+              <span title={`Created: ${new Date(diagram.createdAt).toLocaleString()}`}>
+                📅 {new Date(diagram.createdAt).toLocaleDateString()}
+              </span>
+              <span title={`Updated: ${new Date(diagram.updatedAt).toLocaleString()}`}>
+                🔄 {new Date(diagram.updatedAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Preview */}
-      <div
-        className="flex flex-1 cursor-pointer items-center justify-center bg-white p-4 dark:bg-gray-800"
-        onClick={handleZoom}
-        title="Click to zoom"
-      >
+      {/* Preview with Floating Buttons */}
+      <div className="relative flex flex-1 items-center justify-center bg-white p-4 dark:bg-gray-800">
         {isLoading && (
           <div className="text-sm text-gray-500 dark:text-gray-400">Loading diagram...</div>
         )}
@@ -160,11 +131,120 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
           </div>
         )}
         {svg && !isLoading && !error && (
-          <div className="max-h-64 overflow-hidden rounded bg-white p-2">
-            <div dangerouslySetInnerHTML={{ __html: svg }} />
-          </div>
+          <>
+            {/* Diagram Preview - Clickable with hover effect */}
+            <div 
+              onClick={handleZoom}
+              className="max-h-96 overflow-hidden rounded bg-white p-2 cursor-pointer transition-transform hover:scale-105"
+              title="Click to zoom"
+            >
+              <div 
+                className="flex items-center justify-center"
+                style={{ minHeight: '200px' }}
+                dangerouslySetInnerHTML={{ __html: svg }} 
+              />
+            </div>
+            
+            {/* Floating Action Button - Top Left: Delete (Dangerous Action) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
+              className="absolute top-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-red-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-red-500 hover:scale-110 group-hover:opacity-100 opacity-60"
+              title="Delete Diagram"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+
+            {/* Floating Action Buttons - Top Right: Edit, Info */}
+            <div className="absolute top-3 right-3 z-10 flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit();
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-amber-500 hover:scale-110 group-hover:opacity-100 opacity-60"
+                title="Edit Diagram"
+              >
+                <Edit className="h-4 w-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleInfo();
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-blue-500 hover:scale-110 group-hover:opacity-100 opacity-60"
+                title="View Info"
+              >
+                <Info className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Floating Action Buttons - Bottom Left: Export */}
+            <div className="absolute bottom-3 left-3 z-10">
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowExportMenu(!showExportMenu);
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-green-500 hover:scale-110 group-hover:opacity-100 opacity-60"
+                  title="Export"
+                >
+                  <Download className="h-5 w-5" />
+                </button>
+                {showExportMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleExportSVG();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                    >
+                      Export SVG
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleExportPNG();
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-900 hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
+                    >
+                      Export PNG
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Floating Action Button - Bottom Right: AI Assistant */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAIEdit();
+              }}
+              className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 to-purple-600 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl group-hover:opacity-100 opacity-60"
+              title="Edit with AI"
+            >
+              <Sparkles className="h-5 w-5" />
+            </button>
+          </>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDelete}
+        title={t('modal.delete.title')}
+        message={t('modal.delete.message').replace('{title}', diagram.title)}
+        confirmText={t('modal.delete.confirm')}
+        cancelText={t('modal.delete.cancel')}
+        variant="danger"
+      />
     </div>
   );
 }

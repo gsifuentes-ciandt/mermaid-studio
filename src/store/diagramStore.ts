@@ -22,8 +22,8 @@ const defaultFilters: DiagramFilters = {
 
 const initialDiagrams = loadInitialDiagrams();
 
-const filterDiagrams = (diagrams: Diagram[], filters: DiagramFilters): Diagram[] =>
-  diagrams.filter((diagram) => {
+const filterDiagrams = (diagrams: Diagram[], filters: DiagramFilters): Diagram[] => {
+  const filtered = diagrams.filter((diagram) => {
     const search = filters.searchTerm.trim().toLowerCase();
     const matchesSearch =
       search.length === 0 ||
@@ -33,6 +33,14 @@ const filterDiagrams = (diagrams: Diagram[], filters: DiagramFilters): Diagram[]
     const matchesType = filters.typeFilter === 'all' || diagram.type === filters.typeFilter;
     return matchesSearch && matchesType;
   });
+  
+  // Sort by updatedAt descending (most recent first)
+  return filtered.sort((a, b) => {
+    const dateA = new Date(a.updatedAt || a.createdAt).getTime();
+    const dateB = new Date(b.updatedAt || b.createdAt).getTime();
+    return dateB - dateA; // Descending order
+  });
+};
 
 const computeMetadata = (diagrams: Diagram[], filters: DiagramFilters): DiagramMetadata => ({
   total: diagrams.length,

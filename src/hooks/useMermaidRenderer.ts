@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { renderDiagram } from '@/services/mermaid.service';
+import { errorTrackingService } from '@/services/errorTracking.service';
 
 export interface UseMermaidRendererResult {
   svg: string;
@@ -30,8 +31,20 @@ export function useMermaidRenderer(code: string): UseMermaidRendererResult {
         setError(null);
       } catch (err) {
         console.error('Mermaid render error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to render diagram');
+        const errorMessage = err instanceof Error ? err.message : 'Failed to render diagram';
+        setError(errorMessage);
         setSvg('');
+        
+        // Log error for analysis
+        errorTrackingService.logMermaidError({
+          message: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          diagramCode: code,
+          metadata: {
+            codeLength: code.length,
+            timestamp: new Date().toISOString(),
+          },
+        });
       } finally {
         setIsLoading(false);
       }

@@ -5,7 +5,7 @@ import { cn } from '@/utils/cn';
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title: string | ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -60,7 +60,13 @@ export function Modal({
       >
         {/* Header */}
         <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-gradient-to-r from-primary-500 to-purple-600 px-6 py-4 dark:from-primary-600 dark:to-purple-700">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <div className="flex items-center gap-3">
+            {typeof title === 'string' ? (
+              <h2 className="text-2xl font-bold text-white">{title}</h2>
+            ) : (
+              title
+            )}
+          </div>
           <button
             onClick={onClose}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"

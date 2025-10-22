@@ -20,6 +20,7 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 ### Why Mermaid Studio Pro?
 
 - 🎨 **Beautiful UI**: Modern, gradient-based design with smooth animations
+- 🤖 **AI-Powered**: Generate, modify, and explain diagrams with AI assistance
 - 🌙 **Dark Mode**: Full dark theme support for comfortable viewing
 - 🌍 **Internationalization**: Support for English, Spanish, and Portuguese
 - 📱 **Responsive**: Works perfectly on desktop, tablet, and mobile
@@ -31,6 +32,16 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 ---
 
 ## ✨ Features
+
+### 🤖 AI Assistant
+
+- **Generate Diagrams**: Create diagrams from natural language descriptions
+- **Modify Diagrams**: Ask AI to update existing diagrams with new requirements
+- **Explain Diagrams**: Get clear explanations of complex diagram logic
+- **Quick Actions**: Pre-built prompts for common diagram types
+- **Keyboard Shortcut**: Press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) to open AI assistant
+- **Multi-language Support**: AI responses in English, Spanish, and Portuguese
+- **Preview & Accept**: Review AI suggestions before adding them to your collection
 
 ### 🎨 Diagram Management
 
@@ -117,6 +128,12 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 - **[Mermaid.js](https://mermaid.js.org/)** - Powerful diagram rendering engine
 - **SVG Output** - Scalable, high-quality diagrams
 
+### AI & Data Processing
+
+- **[Zod](https://zod.dev/)** - Runtime type validation for API responses
+- **[React Markdown](https://remarkjs.github.io/react-markdown/)** - Markdown rendering for AI responses
+- **[React Syntax Highlighter](https://react-syntax-highlighter.github.io/react-syntax-highlighter/)** - Code syntax highlighting
+
 ### Additional Libraries
 
 - **[React Hot Toast](https://react-hot-toast.com/)** - Beautiful notifications
@@ -141,7 +158,20 @@ cd mermaid-studio
 # Install dependencies
 npm install
 
-# Start development server
+# Install proxy server dependencies (for AI features)
+cd server
+npm install
+cd ..
+
+# Copy environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your API keys
+
+# Start proxy server (Terminal 1)
+cd server
+npm start
+
+# Start development server (Terminal 2)
 npm run dev
 
 # Build for production
@@ -150,6 +180,8 @@ npm run build
 # Preview production build
 npm run preview
 ```
+
+**Important:** The AI features require a proxy server to handle Flow API requests. See [PROXY-SETUP.md](./PROXY-SETUP.md) for detailed setup instructions.
 
 ### Development Scripts
 
@@ -170,6 +202,7 @@ mermaid-studio/
 │   └── mermaid-studio-logo.png
 ├── src/
 │   ├── components/           # React components
+│   │   ├── ai/              # AI assistant components
 │   │   ├── diagram/         # Diagram-related components
 │   │   ├── layout/          # Layout components (Header, Toolbar)
 │   │   ├── modals/          # Modal dialogs
@@ -177,15 +210,27 @@ mermaid-studio/
 │   │   └── zoom/            # Zoom modal components
 │   ├── contexts/            # React contexts (Theme, i18n)
 │   ├── hooks/               # Custom React hooks
-│   ├── services/            # Business logic (export, import, mermaid)
+│   ├── services/            # Business logic
+│   │   ├── ai/              # AI service layer
+│   │   │   ├── providers/   # AI provider implementations
+│   │   │   └── prompts/     # System prompts
+│   │   ├── export.service.ts
+│   │   ├── import.service.ts
+│   │   └── mermaid.service.ts
 │   ├── store/               # Zustand stores
+│   │   ├── aiStore.ts       # AI state management
+│   │   ├── diagramStore.ts
+│   │   └── uiStore.ts
 │   ├── styles/              # Global styles
 │   ├── types/               # TypeScript type definitions
 │   ├── utils/               # Utility functions
 │   ├── App.tsx              # Main app component
+│   ├── env.d.ts             # Environment variable types
 │   └── main.tsx             # App entry point
 ├── docs/                     # Documentation
+│   ├── ai/                  # AI implementation guides
 │   └── legacy-index.html    # Original HTML implementation
+├── .env.local                # Environment variables (not in git)
 ├── AGENTS.md                 # AI agent guidelines
 ├── README.md                 # This file
 ├── package.json              # Dependencies and scripts
@@ -198,7 +243,15 @@ mermaid-studio/
 
 ## 🎯 Usage Examples
 
-### Creating a Workflow Diagram
+### Using AI to Generate Diagrams
+
+1. Press **`Cmd+K`** (Mac) or **`Ctrl+K`** (Windows/Linux) to open AI assistant
+2. Type a natural language description, e.g., "Create a user login workflow diagram"
+3. Review the AI-generated diagram preview
+4. Click **"Accept & Add Diagram"** to add it to your collection
+5. Or use **Quick Actions** for common diagram types
+
+### Creating a Workflow Diagram Manually
 
 1. Click **"Add Diagram"** button
 2. Select **"Workflow"** type

@@ -12,6 +12,7 @@ This file provides context, architecture, and guidelines for AI agents (like Cla
 
 - **Purpose**: Professional diagram management platform for developers and technical teams
 - **Tech Stack**: React 18.3, TypeScript 5.5, Vite 5.4, TailwindCSS 3.4, Zustand
+- **AI Integration**: Flow API (primary), OpenAI (fallback) for diagram generation
 - **Storage**: LocalStorage (client-side persistence)
 - **Deployment**: Netlify (automatic from `main` branch)
 - **Languages**: English, Spanish, Portuguese (i18n support)
@@ -25,6 +26,13 @@ This file provides context, architecture, and guidelines for AI agents (like Cla
 ```
 src/
 ├── components/
+│   ├── ai/               # AI assistant components
+│   │   ├── AIAssistant.tsx      # Main AI panel
+│   │   ├── AIButton.tsx         # Floating AI button
+│   │   ├── ChatInterface.tsx    # Chat UI
+│   │   ├── ChatMessage.tsx      # Individual messages
+│   │   ├── QuickActions.tsx     # Pre-built prompts
+│   │   └── DiffPreview.tsx      # Suggestion preview modal
 │   ├── diagram/          # Diagram display and management
 │   │   ├── DiagramGrid.tsx      # Main grid with pagination (12 per page)
 │   │   └── DiagramCard.tsx      # Individual diagram cards
@@ -349,11 +357,160 @@ When making changes, verify:
 
 ---
 
+## 🚀 Deployment & Testing
+
+### Deployment Architecture
+
+#### Local Development vs Production
+
+| Component | Local Development | Production (Netlify) |
+|-----------|------------------|----------------------|
+| **Frontend** | Vite dev server (`:5173`) | Static files on Netlify CDN |
+| **Backend** | Node.js proxy (`server/proxy.js` on `:3001`) | Netlify Functions (serverless) |
+| **API Endpoint** | `http://localhost:3001/api/chat/completions` | `/api/chat/completions` |
+| **Credentials** | `.env.local` file | Netlify environment variables |
+
+#### Request Flow
+
+**Local**: Browser → Frontend → Proxy Server → Flow API  
+**Production**: Browser → Frontend → Netlify Function → Flow API
+
+**Key Point**: `server/proxy.js` is LOCAL ONLY. In production, Netlify Functions (`netlify/functions/`) handle API proxying.
+
+### Environment Variables
+
+#### Required for Deployment
+
+Add these in Netlify Dashboard → Site Settings → Environment Variables:
+
+```bash
+FLOW_CLIENT_ID=<your-client-id>
+FLOW_CLIENT_SECRET=<your-client-secret>
+FLOW_APP_TO_ACCESS=llm-api
+FLOW_TENANT=lithiadw
+FLOW_AGENT=mermaid-studio
+```
+
+#### Optional Variables
+
+```bash
+VITE_OPENAI_API_KEY=<your-openai-key>  # Fallback AI provider
+```
+
+#### Local Development Setup
+
+Create `.env.local` in project root (already in `.gitignore`):
+
+```bash
+# Backend Variables (NO VITE_ prefix)
+FLOW_CLIENT_ID=your-client-id
+FLOW_CLIENT_SECRET=your-client-secret
+FLOW_APP_TO_ACCESS=llm-api
+FLOW_TENANT=lithiadw
+FLOW_AGENT=mermaid-studio
+
+# Frontend Variables (MUST have VITE_ prefix)
+VITE_OPENAI_API_KEY=your-openai-key
+```
+
+**Key Point**: Backend variables (used by `server/proxy.js` and `netlify/functions/`) should NOT have the `VITE_` prefix. Only frontend variables need `VITE_`.
+
+### Deployment Process
+
+1. **Commit code**: `git push` to `main` branch
+2. **Netlify auto-deploys**: Builds frontend + deploys functions
+3. **Configure env vars**: Add in Netlify dashboard (one-time setup)
+4. **Verify**: Test `/api/health` endpoint
+
+### Testing
+
+#### Run Tests Locally
+
+```bash
+# Unit tests
+npm test
+
+# Watch mode
+npm test -- --watch
+
+# Coverage
+npm test -- --coverage
+
+# Specific test file
+npm test -- ai.utils.test.ts
+```
+
+#### Test AI Integration Locally
+
+```bash
+# Start proxy server (Terminal 1)
+cd server
+npm start
+
+# Start frontend (Terminal 2)
+npm run dev
+
+# Test authentication (Terminal 3)
+node server/test-auth.js
+```
+
+#### Test Production Deployment
+
+```bash
+# Health check
+curl https://your-site.netlify.app/api/health
+
+# Should return: {"status":"ok","timestamp":"..."}
+```
+
+### Netlify Functions
+
+Located in `netlify/functions/`:
+- **`chat-completions.js`**: Main AI proxy (handles Flow API auth + requests)
+- **`health.js`**: Health check endpoint
+
+These are serverless functions that:
+- Run on AWS Lambda (managed by Netlify)
+- Only execute when called (pay-per-use)
+- Have access to environment variables
+- Cache authentication tokens for performance
+
+### Security Model
+
+**Why use proxy/functions?**
+- ❌ **Bad**: Store credentials in frontend → Exposed in browser
+- ✅ **Good**: Store credentials on server → Never exposed to client
+
+Both `server/proxy.js` (local) and `netlify/functions/` (production) keep credentials secure on the server side.
+
+### Troubleshooting Deployment
+
+**"Function not found"**
+- Check `netlify.toml` has `functions = "netlify/functions"`
+- Verify files exist in `netlify/functions/` directory
+
+**"Missing environment variables"**
+- Add `FLOW_CLIENT_ID` and `FLOW_CLIENT_SECRET` in Netlify dashboard
+- Redeploy after adding variables
+
+**"Authentication failed"**
+- Verify credentials are correct
+- Check `FLOW_TENANT` is set to `lithiadw`
+- Test locally with `node server/test-auth.js`
+
+**CORS errors**
+- Functions already include CORS headers (`Access-Control-Allow-Origin: *`)
+- Check browser console for specific error
+
+---
+
 ## 🔗 Related Files
 
 - **README.md**: User-facing documentation
-- **mermaid-studio-modernization.md**: Migration guide from legacy HTML
-- **docs/legacy-index.html**: Original implementation (reference only)
+- **package.json**: Dependencies and scripts
+- **netlify.toml**: Netlify configuration (functions, redirects)
+- **server/**: Local development proxy server
+- **netlify/functions/**: Production serverless functions
 
 ---
 
@@ -367,5 +524,5 @@ If you're an AI agent and encounter ambiguity:
 
 ---
 
-**Last Updated**: 2025-01-09
-**Version**: 2.0.0 (Modern React implementation)
+**Last Updated**: 2025-01-22
+**Version**: 2.0.0 (Modern React implementation with AI integration)

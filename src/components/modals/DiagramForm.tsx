@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { Copy, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -6,6 +7,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { EndpointFields } from './EndpointFields';
 import { WorkflowFields } from './WorkflowFields';
 import { useDiagramStore } from '@/store/diagramStore';
+import { useI18n } from '@/contexts/I18nContext';
 import type { Diagram, DiagramType, Payload } from '@/types/diagram.types';
 import toast from 'react-hot-toast';
 
@@ -14,15 +16,6 @@ interface DiagramFormProps {
   onClose: () => void;
 }
 
-const diagramTypeOptions = [
-  { value: '', label: 'Select a type...' },
-  { value: 'workflow', label: '📄 Workflow - Business process flows' },
-  { value: 'endpoint', label: '🔌 Endpoint/API - API documentation with payloads' },
-  { value: 'architecture', label: '🏗️ Architecture - System design diagrams' },
-  { value: 'sequence', label: '📝 Sequence - Interaction diagrams' },
-  { value: 'state', label: '🔀 State Machine - State transitions' },
-  { value: 'other', label: '📄 Other - General purpose' }
-];
 
 function generateFilename(title: string): string {
   return title
@@ -32,14 +25,26 @@ function generateFilename(title: string): string {
 }
 
 export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element {
+  const { t } = useI18n();
   const addDiagram = useDiagramStore((state) => state.addDiagram);
   const updateDiagram = useDiagramStore((state) => state.updateDiagram);
+
+  const diagramTypeOptions = [
+    { value: '', label: t('form.field.typePlaceholder') },
+    { value: 'workflow', label: '📄 ' + t('form.field.typeOptions.workflow') },
+    { value: 'endpoint', label: '🔌 ' + t('form.field.typeOptions.endpoint') },
+    { value: 'architecture', label: '🏗️ ' + t('form.field.typeOptions.architecture') },
+    { value: 'sequence', label: '📝 ' + t('form.field.typeOptions.sequence') },
+    { value: 'state', label: '🔀 ' + t('form.field.typeOptions.state') },
+    { value: 'other', label: '📄 ' + t('form.field.typeOptions.other') }
+  ];
 
   const [type, setType] = useState<DiagramType | ''>(diagram?.type || '');
   const [title, setTitle] = useState(diagram?.title || '');
   const [description, setDescription] = useState(diagram?.description || '');
   const [code, setCode] = useState(diagram?.code || '');
   const [tags, setTags] = useState(diagram?.tags || '');
+  const [copied, setCopied] = useState(false);
 
   // Endpoint fields
   const [httpMethod, setHttpMethod] = useState(diagram?.httpMethod || '');
@@ -55,11 +60,24 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
   const [workflowActors, setWorkflowActors] = useState(diagram?.workflowActors || '');
   const [workflowTrigger, setWorkflowTrigger] = useState(diagram?.workflowTrigger || '');
 
+  const handleCopyCode = async () => {
+    if (!code) return;
+    
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      toast.success(t('ai.toast.codeCopied'));
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error(t('ai.toast.copyFailed'));
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
     if (!type || !title || !code) {
-      toast.error('Please fill in all required fields');
+      toast.error(t('form.error.required'));
       return;
     }
 
@@ -89,10 +107,10 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
 
     if (diagram) {
       updateDiagram(newDiagram);
-      toast.success('Diagram updated successfully!');
+      toast.success(t('form.success.updated'));
     } else {
       addDiagram(newDiagram);
-      toast.success('Diagram created successfully!');
+      toast.success(t('form.success.created'));
     }
 
     onClose();
@@ -102,18 +120,16 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Info Card */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
-        <div className="mb-2 font-semibold text-blue-900 dark:text-blue-300">💡 Pro Tip</div>
+        <div className="mb-2 font-semibold text-blue-900 dark:text-blue-300">💡 {t('form.proTip.title')}</div>
         <div className="text-sm text-blue-800 dark:text-blue-200">
-          Use diagram types to organize your documentation. Endpoint/API diagrams include special
-          fields for request/response payloads, while Workflow diagrams help document business
-          processes.
+          {t('form.proTip.message')}
         </div>
       </div>
 
       {/* Diagram Type */}
       <div>
         <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
-          Diagram Type <span className="text-red-500">*</span>
+          {t('form.field.type')} <span className="text-red-500">*</span>
         </label>
         <Select
           value={type}
@@ -126,24 +142,24 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
       {/* Title */}
       <div>
         <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
-          Title <span className="text-red-500">*</span>
+          {t('form.field.title')} <span className="text-red-500">*</span>
         </label>
         <Input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="e.g., User Authentication Flow"
+          placeholder={t('form.field.titlePlaceholder')}
           required
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">Description</label>
+        <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">{t('form.field.description')}</label>
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe the purpose of this diagram..."
+          placeholder={t('form.field.descriptionPlaceholder')}
           rows={3}
         />
       </div>
@@ -173,9 +189,31 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
 
       {/* Mermaid Code */}
       <div>
-        <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">
-          Mermaid Code <span className="text-red-500">*</span>
-        </label>
+        <div className="mb-2 flex items-center justify-between">
+          <label className="font-semibold text-gray-700 dark:text-gray-300">
+            {t('form.field.code')} <span className="text-red-500">*</span>
+          </label>
+          {code && (
+            <button
+              type="button"
+              onClick={handleCopyCode}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-all hover:bg-gray-50 hover:border-primary-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:border-primary-500"
+              title="Copy code"
+            >
+              {copied ? (
+                <>
+                  <CheckCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  <span className="text-green-600 dark:text-green-400">{t('button.copied')}</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5" />
+                  <span>{t('form.button.copy')}</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
         <Textarea
           value={code}
           onChange={(e) => setCode(e.target.value)}
@@ -188,22 +226,22 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
 
       {/* Tags */}
       <div>
-        <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">Tags</label>
+        <label className="mb-2 block font-semibold text-gray-700 dark:text-gray-300">{t('form.field.tags')}</label>
         <Input
           type="text"
           value={tags}
           onChange={(e) => setTags(e.target.value)}
-          placeholder="e.g., authentication, security, api (comma-separated)"
+          placeholder={t('form.field.tagsPlaceholder')}
         />
       </div>
 
       {/* Footer Buttons */}
       <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
         <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
+          {t('form.button.cancel')}
         </Button>
         <Button type="submit" variant="primary">
-          {diagram ? 'Update Diagram' : 'Create Diagram'}
+          {t('form.button.save')}
         </Button>
       </div>
     </form>

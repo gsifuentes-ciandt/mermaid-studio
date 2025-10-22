@@ -25,49 +25,59 @@ export function exportDiagramSvg(diagram: Diagram, svg: string): void {
 }
 
 export async function exportDiagramPng(diagram: Diagram, svg: string): Promise<void> {
-  const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-  const url = URL.createObjectURL(svgBlob);
-
-  const image = new Image();
-  image.crossOrigin = 'anonymous';
-
-  await new Promise<void>((resolve, reject) => {
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve();
-    };
-    image.onerror = (error) => reject(error);
-    image.src = url;
-  });
-
+  // Parse SVG to get dimensions
   const svgElement = new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement as unknown as SVGSVGElement;
   const width = Number(svgElement.getAttribute('width')) || svgElement.viewBox?.baseVal?.width || 800;
   const height = Number(svgElement.getAttribute('height')) || svgElement.viewBox?.baseVal?.height || 600;
 
+  // Create canvas
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas context unavailable');
 
-  const scale = window.devicePixelRatio || 1;
+  // Set canvas size with device pixel ratio for high quality
+  const scale = 2; // Use 2x for better quality
   canvas.width = width * scale;
   canvas.height = height * scale;
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
 
+  // Scale context and fill white background
   context.scale(scale, scale);
-  context.clearRect(0, 0, width, height);
   context.fillStyle = '#ffffff';
   context.fillRect(0, 0, width, height);
-  context.drawImage(image, 0, 0, width, height);
 
-  await new Promise<void>((resolve) =>
+  // Convert SVG to data URL (avoids CORS issues)
+  const svgData = encodeURIComponent(svg);
+  const dataUrl = `data:image/svg+xml;charset=utf-8,${svgData}`;
+
+  // Load and draw image
+  const image = new Image();
+  
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => {
+      try {
+        context.drawImage(image, 0, 0, width, height);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    image.onerror = (error) => reject(error);
+    image.src = dataUrl;
+  });
+
+  // Convert canvas to blob and download
+  await new Promise<void>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) {
         downloadBlob(blob, `${diagram.name || 'diagram'}.png`);
+        resolve();
+      } else {
+        reject(new Error('Failed to create blob'));
       }
-      resolve();
-    }, 'image/png')
-  );
+    }, 'image/png', 1.0);
+  });
 }
 
 export async function downloadAllAsZip(

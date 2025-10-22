@@ -1,1 +1,15 @@
 node_modules
+
+# Environment variables
+.env.local
+.env.*.local
+
+# Dist
+/dist
+
+# Package
+/package-lock.json
+
+# Coverage
+/coverage
+

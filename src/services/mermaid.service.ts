@@ -7,7 +7,28 @@ function ensureInitialized(): void {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'loose',
-    theme: 'default'
+    theme: 'default',
+    themeVariables: {
+      fontSize: '20px',
+      fontFamily: 'ui-sans-serif, system-ui, sans-serif'
+    },
+    sequence: {
+      actorFontSize: '18px',
+      noteFontSize: '16px',
+      messageFontSize: '16px',
+      width: 200,
+      height: 70,
+      boxMargin: 15,
+      noteMargin: 15,
+      messageMargin: 50,
+      diagramMarginX: 30,
+      diagramMarginY: 15
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 20
+    }
   });
   initialized = true;
 }

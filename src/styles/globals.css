@@ -4,6 +4,22 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-primary-500 to-purple-600 min-h-screen text-gray-900 antialiased;
+    @apply bg-gradient-to-br from-cyan-50 via-blue-50 to-sky-100 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 min-h-screen text-gray-900 dark:text-white antialiased;
+  }
+}
+
+/* Ensure Mermaid SVGs render at natural size in preview */
+@layer utilities {
+  .mermaid-preview {
+    display: block;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  
+  /* Ensure SVG inside scales properly */
+  .mermaid-preview svg {
+    max-width: 100%;
+    height: auto;
   }
 }
