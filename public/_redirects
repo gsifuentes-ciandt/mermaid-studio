@@ -1,1 +1,6 @@
+# API redirects - must come BEFORE SPA fallback
+/api/chat/completions  /.netlify/functions/chat-completions  200
+/api/health            /.netlify/functions/health            200
+
+# SPA fallback - must be LAST
 /*    /index.html   200
