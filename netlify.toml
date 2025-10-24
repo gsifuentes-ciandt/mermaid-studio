@@ -8,17 +8,21 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = ["netlify/functions/**/*.cjs"]
 
 # Redirect API calls to Netlify Functions
+# Using status 200 for rewrites (not redirects) to preserve POST method
 [[redirects]]
   from = "/api/chat/completions"
   to = "/.netlify/functions/chat-completions"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/health"
   to = "/.netlify/functions/health"
   status = 200
+  force = true
 
 # SPA fallback - must be last
 [[redirects]]
