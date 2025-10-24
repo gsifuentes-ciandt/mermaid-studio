@@ -328,12 +328,9 @@ export function ProjectPage(): ReactElement {
         }}
         projectId={projectId!}
         parentFolderId={parentFolderForNew}
-        onFolderCreated={(folderId: string) => {
+        onFolderCreated={(folder) => {
           // Auto-select the newly created folder
-          const folder = folders.find(f => f.id === folderId);
-          if (folder) {
-            setCurrentFolder(folder);
-          }
+          setCurrentFolder(folder);
           setParentFolderForNew(undefined);
         }}
       />

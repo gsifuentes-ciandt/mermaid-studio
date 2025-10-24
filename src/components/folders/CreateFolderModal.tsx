@@ -18,7 +18,7 @@ interface CreateFolderModalProps {
   onClose: () => void;
   projectId: string;
   parentFolderId?: string;
-  onFolderCreated?: (folderId: string) => void;
+  onFolderCreated?: (folder: any) => void;
 }
 
 export function CreateFolderModal({ isOpen, onClose, projectId, parentFolderId: initialParentFolderId, onFolderCreated }: CreateFolderModalProps): ReactElement {
@@ -60,9 +60,9 @@ export function CreateFolderModal({ isOpen, onClose, projectId, parentFolderId: 
       
       toast.success(t('folder.createSuccess'));
       
-      // Call callback with new folder ID if provided
+      // Call callback with new folder object if provided
       if (onFolderCreated && newFolder) {
-        onFolderCreated(newFolder.id);
+        onFolderCreated(newFolder);
       }
       
       onClose();
