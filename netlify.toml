@@ -3,6 +3,13 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# Secrets scanning configuration
+[build.environment]
+  # Disable secrets scanning for public Supabase anon key (it's meant to be public)
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY"
+  # Omit documentation files from secrets scanning
+  SECRETS_SCAN_OMIT_PATHS = "docs/**,postman/**"
+
 # Redirect API calls to Netlify Functions
 [[redirects]]
   from = "/api/chat/completions"

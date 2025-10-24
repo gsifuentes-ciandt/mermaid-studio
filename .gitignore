@@ -13,3 +13,6 @@ node_modules
 # Coverage
 /coverage
 
+# Postman collections with real credentials
+postman/
+
