@@ -2,13 +2,14 @@
   command = "npm run build"
   publish = "dist"
   functions = "netlify/functions"
+  
+  # Secrets scanning configuration
+  environment = { SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY", SECRETS_SCAN_OMIT_PATHS = "docs/**,postman/**" }
 
-# Secrets scanning configuration
-[build.environment]
-  # Disable secrets scanning for public Supabase anon key (it's meant to be public)
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY"
-  # Omit documentation files from secrets scanning
-  SECRETS_SCAN_OMIT_PATHS = "docs/**,postman/**"
+[functions]
+  node_bundler = "esbuild"
+  # Use Node.js 18.x for functions
+  node_version = "18"
 
 # Redirect API calls to Netlify Functions
 [[redirects]]
