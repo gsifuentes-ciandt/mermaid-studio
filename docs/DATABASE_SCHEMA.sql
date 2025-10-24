@@ -327,23 +327,38 @@ CREATE POLICY "Users can delete own preferences"
 -- =====================================================
 -- PROJECTS POLICIES
 -- =====================================================
--- Uses security definer function to avoid infinite recursion
+-- Updated policies to fix RLS issues with project creation
 
-CREATE POLICY "Users can view accessible projects"
-    ON public.projects FOR SELECT
-    USING (user_has_project_access(id, auth.uid()));
-
+-- 1. INSERT: Allow authenticated users to create projects where they are the owner
 CREATE POLICY "Users can create projects"
     ON public.projects FOR INSERT
+    TO authenticated
     WITH CHECK (owner_id = auth.uid());
 
+-- 2. SELECT: Users can view projects they have access to
+CREATE POLICY "Users can view accessible projects"
+    ON public.projects FOR SELECT
+    TO authenticated
+    USING (
+        owner_id = auth.uid() 
+        OR EXISTS (
+            SELECT 1 FROM public.project_members
+            WHERE project_id = projects.id
+            AND user_id = auth.uid()
+        )
+    );
+
+-- 3. UPDATE: Only owners can update projects
 CREATE POLICY "Owners can update their projects"
     ON public.projects FOR UPDATE
+    TO authenticated
     USING (owner_id = auth.uid())
     WITH CHECK (owner_id = auth.uid());
 
+-- 4. DELETE: Only owners can delete projects
 CREATE POLICY "Owners can delete their projects"
     ON public.projects FOR DELETE
+    TO authenticated
     USING (owner_id = auth.uid());
 
 -- =====================================================

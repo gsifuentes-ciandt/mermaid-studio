@@ -5,6 +5,7 @@
 
 import { type ReactElement, useEffect, useState } from 'react';
 import { useProjectStore } from '../store/projectStore';
+import { useUIStore } from '../store/uiStore';
 import { ProjectCard } from '../components/projects/ProjectCard';
 import { CreateProjectModal } from '../components/projects/CreateProjectModal';
 import { ProjectSettingsModal } from '../components/projects/ProjectSettingsModal';
@@ -19,7 +20,7 @@ import { useI18n } from '../contexts/I18nContext';
 export function DashboardPage(): ReactElement {
   const { t } = useI18n();
   const { projects, loading, fetchProjects, deleteProject } = useProjectStore();
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { projectModal, openProjectModal, closeProjectModal } = useUIStore();
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -67,7 +68,7 @@ export function DashboardPage(): ReactElement {
       {/* Create Project Button */}
       <div className="mb-6">
         <Button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => openProjectModal()}
           className="flex items-center gap-2"
         >
           <Plus className="h-5 w-5" />
@@ -90,7 +91,7 @@ export function DashboardPage(): ReactElement {
           <p className="text-gray-600 dark:text-gray-300 mb-6">
             {t('dashboard.noProjectsDesc')}
           </p>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
+          <Button onClick={() => openProjectModal()}>
             <Plus className="h-5 w-5 mr-2" />
             {t('dashboard.createFirst')}
           </Button>
@@ -113,8 +114,8 @@ export function DashboardPage(): ReactElement {
 
       {/* Create Project Modal */}
       <CreateProjectModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        isOpen={projectModal.isOpen}
+        onClose={closeProjectModal}
       />
 
       {/* Project Settings Modal */}

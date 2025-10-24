@@ -6,12 +6,14 @@
 import { type ReactElement, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useProjectStore } from '../../store/projectStore';
+import { useUIStore } from '../../store/uiStore';
 import { Button } from '../ui/Button';
 import { LayoutDashboard, Settings, Plus, GripVertical, Briefcase } from 'lucide-react';
 
 export function Sidebar(): ReactElement {
   const navigate = useNavigate();
   const location = useLocation();
+  const { openProjectModal } = useUIStore();
   const { projects, fetchProjects } = useProjectStore();
   const [draggedProject, setDraggedProject] = useState<string | null>(null);
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
@@ -105,8 +107,9 @@ export function Sidebar(): ReactElement {
               Projects
             </h3>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => openProjectModal()}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              title="Create New Project"
             >
               <Plus className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             </button>

@@ -15,14 +15,21 @@ interface ZoomModalState {
   diagramId: string | null;
 }
 
+interface ProjectModalState {
+  isOpen: boolean;
+  editingProjectId: string | null;
+}
+
 export interface UIStoreState {
   diagramModal: DiagramModalState;
   infoModal: InfoModalState;
   zoomModal: ZoomModalState;
+  projectModal: ProjectModalState;
   importDialogOpen: boolean;
   setDiagramModal: (isOpen: boolean, editingDiagramId?: string | null) => void;
   setInfoModal: (isOpen: boolean, diagramId?: string | null) => void;
   setZoomModal: (isOpen: boolean, diagramId?: string | null) => void;
+  setProjectModal: (isOpen: boolean, editingProjectId?: string | null) => void;
   setImportDialogOpen: (isOpen: boolean) => void;
   openDiagramModal: (editingDiagramId?: string | null) => void;
   closeDiagramModal: () => void;
@@ -30,12 +37,15 @@ export interface UIStoreState {
   closeInfoModal: () => void;
   openZoomModal: (diagramId: string) => void;
   closeZoomModal: () => void;
+  openProjectModal: (editingProjectId?: string | null) => void;
+  closeProjectModal: () => void;
 }
 
 const creator: StateCreator<UIStoreState> = (set) => ({
   diagramModal: { isOpen: false, editingDiagramId: null },
   infoModal: { isOpen: false, diagramId: null },
   zoomModal: { isOpen: false, diagramId: null },
+  projectModal: { isOpen: false, editingProjectId: null },
   importDialogOpen: false,
   setDiagramModal: (isOpen, editingDiagramId = null) =>
     set({ diagramModal: { isOpen, editingDiagramId } }),
@@ -43,6 +53,8 @@ const creator: StateCreator<UIStoreState> = (set) => ({
     set({ infoModal: { isOpen, diagramId } }),
   setZoomModal: (isOpen, diagramId = null) =>
     set({ zoomModal: { isOpen, diagramId } }),
+  setProjectModal: (isOpen, editingProjectId = null) =>
+    set({ projectModal: { isOpen, editingProjectId } }),
   setImportDialogOpen: (isOpen) => set({ importDialogOpen: isOpen }),
   openDiagramModal: (editingDiagramId = null) =>
     set({ diagramModal: { isOpen: true, editingDiagramId } }),
@@ -55,7 +67,11 @@ const creator: StateCreator<UIStoreState> = (set) => ({
   openZoomModal: (diagramId) =>
     set({ zoomModal: { isOpen: true, diagramId } }),
   closeZoomModal: () =>
-    set({ zoomModal: { isOpen: false, diagramId: null } })
+    set({ zoomModal: { isOpen: false, diagramId: null } }),
+  openProjectModal: (editingProjectId = null) =>
+    set({ projectModal: { isOpen: true, editingProjectId } }),
+  closeProjectModal: () =>
+    set({ projectModal: { isOpen: false, editingProjectId: null } })
 });
 
 export const useUIStore = create<UIStoreState>(creator);
