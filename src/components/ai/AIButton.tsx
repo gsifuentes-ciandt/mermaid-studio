@@ -7,7 +7,7 @@ export const AIButton = () => {
   if (isOpen) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-40 animate-bounce-in">
+    <div className="fixed bottom-12 right-6 z-40 animate-bounce-in">
       {/* Pulsing glow effect */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-500 to-purple-600 opacity-30 animate-pulse" />
       

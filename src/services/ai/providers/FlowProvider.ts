@@ -21,17 +21,54 @@ export class FlowProvider extends BaseAIProvider {
   
   async chatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     try {
+      console.log('🌊 FlowProvider.chatCompletion called');
+      console.log('📦 FlowProvider config:', {
+        hasClientId: !!this.config.clientId,
+        hasClientSecret: !!this.config.clientSecret,
+        hasTenant: !!this.config.tenant,
+        hasAgent: !!this.config.agent,
+        clientIdLength: this.config.clientId?.length || 0,
+        clientSecretLength: this.config.clientSecret?.length || 0,
+      });
+      
       // Use proxy server (local) or Netlify Function (production)
       // In production, VITE_FLOW_PROXY_URL should be set to '/api/chat/completions'
       // In development, it defaults to 'http://localhost:3001/api/chat/completions'
       const proxyUrl = import.meta.env.VITE_FLOW_PROXY_URL || 
                        (import.meta.env.PROD ? '/api/chat/completions' : 'http://localhost:3001/api/chat/completions');
       
+      // Build headers - include user credentials if available
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add Flow credentials from config if available (from user preferences)
+      if (this.config.clientId) {
+        headers['X-Flow-Client-Id'] = this.config.clientId;
+        console.log('✅ Added X-Flow-Client-Id header');
+      } else {
+        console.log('⚠️ No clientId in config');
+      }
+      if (this.config.clientSecret) {
+        headers['X-Flow-Client-Secret'] = this.config.clientSecret;
+        console.log('✅ Added X-Flow-Client-Secret header');
+      } else {
+        console.log('⚠️ No clientSecret in config');
+      }
+      if (this.config.tenant) {
+        headers['X-Flow-Tenant'] = this.config.tenant;
+        console.log('✅ Added X-Flow-Tenant header');
+      }
+      if (this.config.agent) {
+        headers['X-Flow-Agent'] = this.config.agent;
+        console.log('✅ Added X-Flow-Agent header');
+      }
+      
+      console.log('📤 Sending request to proxy with headers:', Object.keys(headers));
+      
       const response = await fetch(proxyUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           model: request.model,
           temperature: request.temperature,

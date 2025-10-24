@@ -1,11 +1,17 @@
 import { useState } from 'react';
 import { useDiagramStore } from '@/store/diagramStore';
+import { useProjectStore } from '@/store/projectStore';
 import { DiagramCard } from './DiagramCard';
 import { Pagination } from '@/components/ui/Pagination';
+import { DiagramGridSkeleton } from '@/components/ui/Skeleton';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 9; // 3 per row
 
-export function DiagramGrid(): JSX.Element {
+interface DiagramGridProps {
+  loading?: boolean;
+}
+
+export function DiagramGrid({ loading = false }: DiagramGridProps): JSX.Element {
   const filteredDiagrams = useDiagramStore((state) => state.filteredDiagrams());
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -17,6 +23,11 @@ export function DiagramGrid(): JSX.Element {
   // Reset to page 1 when filters change
   if (currentPage > totalPages && totalPages > 0) {
     setCurrentPage(1);
+  }
+
+  // Show skeleton while loading
+  if (loading) {
+    return <DiagramGridSkeleton />;
   }
 
   if (filteredDiagrams.length === 0) {
@@ -34,10 +45,10 @@ export function DiagramGrid(): JSX.Element {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
-        {currentDiagrams.map((diagram) => (
-          <DiagramCard key={diagram.name} diagram={diagram} />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3 auto-rows-fr">
+        {currentDiagrams.map((diagram, index) => (
+          <DiagramCard key={`${diagram.name}-${index}`} diagram={diagram} />
         ))}
       </div>
       

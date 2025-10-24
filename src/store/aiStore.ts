@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import { ChatMessage, Suggestion, AISettings } from '../services/ai/ai.types';
 import { aiService } from '../services/ai/ai.service';
 import { useDiagramStore } from './diagramStore';
+import { useProjectStore } from './projectStore';
+import { useAuthStore } from './authStore';
+import { createDiagram } from '../services/diagram.service';
+import { isSupabaseConfigured } from '../services/supabase';
+import { Diagram } from '../types/diagram.types';
 import toast from 'react-hot-toast';
 
 interface AIStore {
@@ -409,7 +414,7 @@ export const useAIStore = create<AIStore>((set, get) => ({
     }
   },
   
-  acceptSuggestion: () => {
+  acceptSuggestion: async () => {
     const { diffPreview, contextDiagram } = get();
     if (!diffPreview || !diffPreview.suggestedCode) return;
     
@@ -442,15 +447,136 @@ export const useAIStore = create<AIStore>((set, get) => ({
       // Keep contextDiagram so user can continue editing
       toast.success('Diagram updated successfully!');
     } else {
-      // Otherwise, create a new diagram
-      diagramStore.addDiagram({
+      // Create a new diagram - check if in collaboration mode
+      if (isSupabaseConfigured()) {
+        const { currentFolder } = useProjectStore.getState();
+        const { user } = useAuthStore.getState();
+        
+        if (!currentFolder) {
+          toast.error('Please select a folder first');
+          set({ diffPreview: null });
+          return;
+        }
+        
+        if (!user) {
+          toast.error('You must be logged in');
+          set({ diffPreview: null });
+          return;
+        }
+        
+        // Save to Supabase
+        const result = await createDiagram({
+          folder_id: currentFolder.id,
+          created_by: user.id,
+          name: `ai-diagram-${Date.now()}`,
+          title: diffPreview.metadata?.title || `AI Generated ${diagramType.charAt(0).toUpperCase() + diagramType.slice(1)}`,
+          description: diffPreview.metadata?.description || diffPreview.explanation.slice(0, 200),
+          code: diffPreview.suggestedCode,
+          type: diagramType,
+          tags: 'ai-generated',
+          httpMethod: diffPreview.metadata?.httpMethod,
+          endpointPath: diffPreview.metadata?.endpointPath,
+          requestPayloads: diffPreview.metadata?.requestPayloads,
+          responsePayloads: diffPreview.metadata?.responsePayloads,
+          workflowActors: diffPreview.metadata?.workflowActors,
+          workflowTrigger: diffPreview.metadata?.workflowTrigger,
+        });
+        
+        if (result.success && result.data) {
+          // Add to store only (diagram already saved to Supabase)
+          const { cloudDiagramToLocal } = await import('../services/diagram.service');
+          const localDiagram = cloudDiagramToLocal(result.data);
+          diagramStore.addDiagramToStore(localDiagram); // Store only, no Supabase
+          toast.success('Diagram added successfully!');
+        } else {
+          toast.error(`Failed to save: ${result.error}`);
+        }
+      } else {
+        // Demo mode: use localStorage
+        diagramStore.addDiagram({
+          name: `ai-diagram-${Date.now()}`,
+          title: diffPreview.metadata?.title || `AI Generated ${diagramType.charAt(0).toUpperCase() + diagramType.slice(1)}`,
+          description: diffPreview.metadata?.description || diffPreview.explanation.slice(0, 200),
+          code: diffPreview.suggestedCode,
+          type: diagramType,
+          tags: 'ai-generated',
+          ...(diffPreview.metadata?.httpMethod && { httpMethod: diffPreview.metadata.httpMethod }),
+          ...(diffPreview.metadata?.endpointPath && { endpointPath: diffPreview.metadata.endpointPath }),
+          ...(diffPreview.metadata?.requestPayloads && { requestPayloads: diffPreview.metadata.requestPayloads }),
+          ...(diffPreview.metadata?.responsePayloads && { responsePayloads: diffPreview.metadata.responsePayloads }),
+          ...(diffPreview.metadata?.workflowActors && { workflowActors: diffPreview.metadata.workflowActors }),
+          ...(diffPreview.metadata?.workflowTrigger && { workflowTrigger: diffPreview.metadata.workflowTrigger }),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+        toast.success('Diagram added successfully!');
+      }
+      
+      set({ diffPreview: null });
+    }
+  },
+  
+  acceptSuggestionAsNew: async () => {
+    const { diffPreview, contextDiagram } = get();
+    if (!diffPreview || !diffPreview.suggestedCode) return;
+    
+    const diagramStore = useDiagramStore.getState();
+    const diagramType = diffPreview.metadata?.type || 'other';
+    const baseName = contextDiagram?.title || 'AI Generated Diagram';
+    
+    // Check if in collaboration mode
+    if (isSupabaseConfigured()) {
+      const { currentFolder } = useProjectStore.getState();
+      const { user } = useAuthStore.getState();
+      
+      if (!currentFolder) {
+        toast.error('Please select a folder first');
+        set({ diffPreview: null });
+        return;
+      }
+      
+      if (!user) {
+        toast.error('You must be logged in');
+        set({ diffPreview: null });
+        return;
+      }
+      
+      // Save to Supabase
+      const result = await createDiagram({
+        folder_id: currentFolder.id,
+        created_by: user.id,
         name: `ai-diagram-${Date.now()}`,
-        title: diffPreview.metadata?.title || `AI Generated ${diagramType.charAt(0).toUpperCase() + diagramType.slice(1)}`,
+        title: diffPreview.metadata?.title || `${baseName} (Copy)`,
         description: diffPreview.metadata?.description || diffPreview.explanation.slice(0, 200),
         code: diffPreview.suggestedCode,
         type: diagramType,
-        tags: 'ai-generated',
-        // Include type-specific fields
+        tags: contextDiagram ? `${contextDiagram.name},ai-modified` : 'ai-generated',
+        httpMethod: diffPreview.metadata?.httpMethod,
+        endpointPath: diffPreview.metadata?.endpointPath,
+        requestPayloads: diffPreview.metadata?.requestPayloads,
+        responsePayloads: diffPreview.metadata?.responsePayloads,
+        workflowActors: diffPreview.metadata?.workflowActors,
+        workflowTrigger: diffPreview.metadata?.workflowTrigger,
+      });
+      
+      if (result.success && result.data) {
+        // Add to store only (diagram already saved to Supabase)
+        const { cloudDiagramToLocal } = await import('../services/diagram.service');
+        const localDiagram = cloudDiagramToLocal(result.data);
+        diagramStore.addDiagramToStore(localDiagram); // Store only, no Supabase
+        toast.success('Diagram added successfully!');
+      } else {
+        toast.error(`Failed to save: ${result.error}`);
+      }
+    } else {
+      // Demo mode: use localStorage
+      diagramStore.addDiagram({
+        name: `ai-diagram-${Date.now()}`,
+        title: diffPreview.metadata?.title || `${baseName} (Copy)`,
+        description: diffPreview.metadata?.description || diffPreview.explanation.slice(0, 200),
+        code: diffPreview.suggestedCode,
+        type: diagramType,
+        tags: contextDiagram ? `${contextDiagram.name},ai-modified` : 'ai-generated',
         ...(diffPreview.metadata?.httpMethod && { httpMethod: diffPreview.metadata.httpMethod }),
         ...(diffPreview.metadata?.endpointPath && { endpointPath: diffPreview.metadata.endpointPath }),
         ...(diffPreview.metadata?.requestPayloads && { requestPayloads: diffPreview.metadata.requestPayloads }),
@@ -460,41 +586,10 @@ export const useAIStore = create<AIStore>((set, get) => ({
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
-      
-      set({ diffPreview: null });
-      toast.success('Diagram added successfully!');
+      toast.success('New diagram created successfully!');
     }
-  },
-  
-  acceptSuggestionAsNew: () => {
-    const { diffPreview, contextDiagram } = get();
-    if (!diffPreview || !diffPreview.suggestedCode) return;
-    
-    const diagramStore = useDiagramStore.getState();
-    const diagramType = diffPreview.metadata?.type || 'other';
-    
-    // Always create a new diagram, even if editing an existing one
-    const baseName = contextDiagram?.title || 'AI Generated Diagram';
-    diagramStore.addDiagram({
-      name: `ai-diagram-${Date.now()}`,
-      title: diffPreview.metadata?.title || `${baseName} (Copy)`,
-      description: diffPreview.metadata?.description || diffPreview.explanation.slice(0, 200),
-      code: diffPreview.suggestedCode,
-      type: diagramType,
-      tags: contextDiagram ? `${contextDiagram.name},ai-modified` : 'ai-generated',
-      // Include type-specific fields
-      ...(diffPreview.metadata?.httpMethod && { httpMethod: diffPreview.metadata.httpMethod }),
-      ...(diffPreview.metadata?.endpointPath && { endpointPath: diffPreview.metadata.endpointPath }),
-      ...(diffPreview.metadata?.requestPayloads && { requestPayloads: diffPreview.metadata.requestPayloads }),
-      ...(diffPreview.metadata?.responsePayloads && { responsePayloads: diffPreview.metadata.responsePayloads }),
-      ...(diffPreview.metadata?.workflowActors && { workflowActors: diffPreview.metadata.workflowActors }),
-      ...(diffPreview.metadata?.workflowTrigger && { workflowTrigger: diffPreview.metadata.workflowTrigger }),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
     
     set({ diffPreview: null });
-    toast.success('New diagram created successfully!');
   },
   
   rejectSuggestion: () => {

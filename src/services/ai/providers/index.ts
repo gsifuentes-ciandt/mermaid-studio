@@ -7,10 +7,9 @@ export class ProviderFactory {
   private static providers: Map<AIProviderType, IAIProvider> = new Map();
   
   static createProvider(config: AIConfig): IAIProvider {
-    // Return cached provider if exists
-    if (this.providers.has(config.provider)) {
-      return this.providers.get(config.provider)!;
-    }
+    // ALWAYS create a new provider to ensure fresh config
+    // Don't use cache because config can change (user preferences)
+    console.log('🏭 ProviderFactory.createProvider called with provider:', config.provider);
     
     let provider: IAIProvider;
     
@@ -19,6 +18,11 @@ export class ProviderFactory {
         if (!config.flow) {
           throw new Error('Flow configuration is required');
         }
+        console.log('🏭 Creating FlowProvider with config:', {
+          hasClientId: !!config.flow.clientId,
+          hasClientSecret: !!config.flow.clientSecret,
+          clientIdLength: config.flow.clientId?.length || 0
+        });
         provider = new FlowProvider(config.flow);
         break;
         
@@ -33,6 +37,7 @@ export class ProviderFactory {
         throw new Error(`Unsupported provider: ${config.provider}`);
     }
     
+    // Cache the provider (but we'll always create new ones now)
     this.providers.set(config.provider, provider);
     return provider;
   }

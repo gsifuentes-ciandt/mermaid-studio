@@ -1,14 +1,27 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { translations, getNestedTranslation, type Locale, type TranslationKeys } from '../locales';
 
+interface Language {
+  code: Locale;
+  name: string;
+  flag: string;
+}
+
 interface I18nContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string) => string;
   translations: TranslationKeys;
+  languages: Language[];
 }
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
+
+const languages: Language[] = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'pt', name: 'Português', flag: '🇧🇷' },
+];
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(() => {
@@ -32,7 +45,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       locale, 
       setLocale: handleSetLocale, 
       t,
-      translations: translations[locale]
+      translations: translations[locale],
+      languages
     }}>
       {children}
     </I18nContext.Provider>

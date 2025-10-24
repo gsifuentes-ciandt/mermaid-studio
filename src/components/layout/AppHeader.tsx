@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, Globe, ChevronDown } from 'lucide-react';
+import { Moon, Sun, Globe, ChevronDown, Users } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useI18n } from '@/contexts/I18nContext';
+import { enableDemoMode } from '@/services/demo.service';
+import { UserMenu } from './UserMenu';
 
 const languages = [
   { code: 'en', name: 'English', flag: '🇺🇸' },
@@ -96,6 +98,9 @@ export function AppHeader(): JSX.Element {
               <Sun size={16} className="text-yellow-400" />
             )}
           </button>
+
+          {/* User Menu - Rightmost */}
+          <UserMenu />
         </div>
       </div>
     </header>

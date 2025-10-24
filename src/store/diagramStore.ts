@@ -53,6 +53,7 @@ export interface DiagramStore {
   selectedDiagramId: string | null;
   metadata: DiagramMetadata;
   addDiagram: (diagram: Diagram) => void;
+  addDiagramToStore: (diagram: Diagram) => void; // Add to store only (no Supabase)
   updateDiagram: (diagram: Diagram) => void;
   deleteDiagram: (id: string) => void;
   setFilters: (filters: Partial<DiagramFilters>) => void;
@@ -75,33 +76,151 @@ const diagramStoreCreator: DiagramStoreCreator = (set, get) => ({
   filters: defaultFilters,
   selectedDiagramId: null,
   metadata: computeMetadata(initialDiagrams, defaultFilters),
-  addDiagram: (diagram: Diagram) =>
+  addDiagram: async (diagram: Diagram) => {
+    // Check if in collaboration mode
+    const { isSupabaseConfigured } = await import('../services/supabase');
+    
+    if (isSupabaseConfigured()) {
+      // Collaboration mode: Add to Supabase
+      const { createDiagram } = await import('../services/diagram.service');
+      const { useProjectStore } = await import('./projectStore');
+      const { useAuthStore } = await import('./authStore');
+      
+      const { currentFolder } = useProjectStore.getState();
+      const { user } = useAuthStore.getState();
+      
+      if (!currentFolder || !user) {
+        console.error('Cannot add diagram: missing folder or user');
+        return;
+      }
+      
+      const result = await createDiagram({
+        folder_id: currentFolder.id,
+        created_by: user.id,
+        name: diagram.name,
+        title: diagram.title,
+        description: diagram.description || '',
+        code: diagram.code,
+        type: diagram.type,
+        tags: diagram.tags,
+        httpMethod: diagram.httpMethod,
+        endpointPath: diagram.endpointPath,
+        requestPayloads: diagram.requestPayloads,
+        responsePayloads: diagram.responsePayloads,
+        workflowActors: diagram.workflowActors,
+        workflowTrigger: diagram.workflowTrigger,
+      });
+      
+      if (!result.success) {
+        console.error('Failed to add diagram to Supabase:', result.error);
+        return;
+      }
+      
+      // Add to store state directly (no folder refresh needed)
+      if (result.data) {
+        const { cloudDiagramToLocal } = await import('../services/diagram.service');
+        const localDiagram = cloudDiagramToLocal(result.data);
+        set((state) => {
+          const diagrams = [...state.diagrams, localDiagram];
+          return {
+            diagrams,
+            metadata: computeMetadata(diagrams, state.filters)
+          };
+        });
+      }
+    } else {
+      // Demo mode: Add to localStorage
+      set((state) => {
+        const diagrams = [...state.diagrams, diagram];
+        return {
+          diagrams,
+          metadata: computeMetadata(diagrams, state.filters)
+        };
+      });
+    }
+  },
+  addDiagramToStore: (diagram: Diagram) => {
+    // Add to store only (used when diagram is already saved to Supabase)
     set((state) => {
       const diagrams = [...state.diagrams, diagram];
       return {
         diagrams,
         metadata: computeMetadata(diagrams, state.filters)
       };
-    }),
-  updateDiagram: (diagram: Diagram) =>
-    set((state) => {
-      const diagrams = state.diagrams.map((item) =>
-        item.name === diagram.name ? { ...item, ...diagram } : item
-      );
-      return {
-        diagrams,
-        metadata: computeMetadata(diagrams, state.filters)
-      };
-    }),
-  deleteDiagram: (id: string) =>
-    set((state) => {
-      const diagrams = state.diagrams.filter((diagramItem) => diagramItem.name !== id);
-      return {
-        diagrams,
-        selectedDiagramId: state.selectedDiagramId === id ? null : state.selectedDiagramId,
-        metadata: computeMetadata(diagrams, state.filters)
-      };
-    }),
+    });
+  },
+  updateDiagram: async (diagram: Diagram) => {
+    // Check if in collaboration mode
+    const { isSupabaseConfigured } = await import('../services/supabase');
+    
+    if (isSupabaseConfigured()) {
+      // Collaboration mode: Update in Supabase
+      const { updateDiagram: updateDiagramService } = await import('../services/diagram.service');
+      const result = await updateDiagramService(diagram.name, diagram);
+      
+      if (!result.success) {
+        console.error('Failed to update diagram in Supabase:', result.error);
+        return;
+      }
+      
+      // Update store state (no reload needed!)
+      set((state) => {
+        const diagrams = state.diagrams.map((item) =>
+          item.name === diagram.name ? { ...item, ...diagram } : item
+        );
+        return {
+          diagrams,
+          metadata: computeMetadata(diagrams, state.filters)
+        };
+      });
+    } else {
+      // Demo mode: Update in localStorage
+      set((state) => {
+        const diagrams = state.diagrams.map((item) =>
+          item.name === diagram.name ? { ...item, ...diagram } : item
+        );
+        return {
+          diagrams,
+          metadata: computeMetadata(diagrams, state.filters)
+        };
+      });
+    }
+  },
+  deleteDiagram: async (id: string) => {
+    // Check if in collaboration mode
+    const { isSupabaseConfigured } = await import('../services/supabase');
+    
+    if (isSupabaseConfigured()) {
+      // Collaboration mode: Delete from Supabase
+      const { deleteDiagram: deleteDiagramService } = await import('../services/diagram.service');
+      const result = await deleteDiagramService(id);
+      
+      if (!result.success) {
+        console.error('Failed to delete diagram from Supabase:', result.error);
+        return;
+      }
+      
+      // Update store state (no reload needed!)
+      set((state) => {
+        const diagrams = state.diagrams.filter((diagramItem) => diagramItem.name !== id);
+        return {
+          diagrams,
+          selectedDiagramId: state.selectedDiagramId === id ? null : state.selectedDiagramId,
+          metadata: computeMetadata(diagrams, state.filters)
+        };
+      });
+    } else {
+      // Demo mode: Delete from localStorage
+      set((state) => {
+        const diagrams = state.diagrams.filter((diagramItem) => diagramItem.name !== id);
+        return {
+          diagrams,
+          selectedDiagramId: state.selectedDiagramId === id ? null : state.selectedDiagramId,
+          metadata: computeMetadata(diagrams, state.filters)
+        };
+      });
+    }
+  },
   setFilters: (filters: Partial<DiagramFilters>) =>
     set((state) => {
       const nextFilters = { ...state.filters, ...filters };

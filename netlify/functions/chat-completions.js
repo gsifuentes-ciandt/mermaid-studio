@@ -26,24 +26,40 @@ const FLOW_CONFIG = {
 };
 
 // Token cache (persists across function invocations in the same container)
-let cachedToken = null;
-let tokenExpiry = null;
+// Key: clientId + tenant, Value: { token, expiry }
+const tokenCache = new Map();
 
 /**
  * Authenticate with Flow API and get access token
+ * Supports credentials from env variables OR request headers (user preferences)
  */
-async function authenticate() {
+async function authenticate(clientId, clientSecret, tenant) {
+  // Use provided credentials or fall back to env variables
+  const authClientId = clientId || FLOW_CONFIG.clientId;
+  const authClientSecret = clientSecret || FLOW_CONFIG.clientSecret;
+  const authTenant = tenant || FLOW_CONFIG.tenant;
+  
+  if (!authClientId || !authClientSecret) {
+    throw new Error('Missing Flow API credentials. Provide via env variables or request headers.');
+  }
+  
+  // Create cache key based on clientId + tenant
+  const cacheKey = `${authClientId}:${authTenant}`;
+  
   // Return cached token if still valid (with 5 minute buffer)
-  if (cachedToken && tokenExpiry && new Date() < new Date(tokenExpiry.getTime() - 5 * 60 * 1000)) {
-    console.log('Using cached token');
-    return cachedToken;
+  const cached = tokenCache.get(cacheKey);
+  if (cached && cached.expiry && new Date() < new Date(cached.expiry.getTime() - 5 * 60 * 1000)) {
+    console.log('Using cached token for:', cacheKey.substring(0, 20) + '...');
+    return cached.token;
   }
 
   console.log('Authenticating with Flow API...');
+  console.log('Client ID:', authClientId ? authClientId.substring(0, 10) + '...' : 'N/A');
+  console.log('Tenant:', authTenant);
   
   const payload = {
-    clientId: FLOW_CONFIG.clientId,
-    clientSecret: FLOW_CONFIG.clientSecret,
+    clientId: authClientId,
+    clientSecret: authClientSecret,
     appToAccess: FLOW_CONFIG.appToAccess,
   };
 
@@ -51,7 +67,7 @@ async function authenticate() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'FlowTenant': FLOW_CONFIG.tenant,
+      'FlowTenant': authTenant,
     },
     body: JSON.stringify(payload),
   });
@@ -63,15 +79,18 @@ async function authenticate() {
   }
 
   const data = await response.json();
-  cachedToken = data.access_token;
+  const token = data.access_token;
   
   // Calculate token expiry (expires_in is in seconds)
   const expiresInMs = (data.expires_in || 3600) * 1000;
-  tokenExpiry = new Date(Date.now() + expiresInMs);
+  const expiry = new Date(Date.now() + expiresInMs);
   
-  console.log('Authentication successful, token expires at:', tokenExpiry.toISOString());
+  // Cache token
+  tokenCache.set(cacheKey, { token, expiry });
   
-  return cachedToken;
+  console.log('Authentication successful, token expires at:', expiry.toISOString());
+  
+  return token;
 }
 
 /**
@@ -96,25 +115,10 @@ exports.handler = async (event, context) => {
       statusCode: 200,
       headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Flow-Client-Id, X-Flow-Client-Secret, X-Flow-Tenant, X-Flow-Agent',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
       },
       body: '',
-    };
-  }
-
-  // Validate required environment variables
-  if (!FLOW_CONFIG.clientId || !FLOW_CONFIG.clientSecret) {
-    console.error('Missing required environment variables');
-    return {
-      statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      body: JSON.stringify({ 
-        error: 'Server configuration error: Missing Flow API credentials' 
-      }),
     };
   }
 
@@ -128,8 +132,36 @@ exports.handler = async (event, context) => {
       temperature: requestBody.temperature,
     });
 
-    // Get authentication token
-    const token = await authenticate();
+    // Extract credentials from request headers (user preferences)
+    const headerClientId = event.headers['x-flow-client-id'];
+    const headerClientSecret = event.headers['x-flow-client-secret'];
+    const headerTenant = event.headers['x-flow-tenant'];
+    const headerAgent = event.headers['x-flow-agent'];
+    
+    if (headerClientId && headerClientSecret) {
+      console.log('Using credentials from request headers (user preferences)');
+    } else if (FLOW_CONFIG.clientId && FLOW_CONFIG.clientSecret) {
+      console.log('Using credentials from environment variables');
+    } else {
+      console.error('No credentials available');
+      return {
+        statusCode: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: JSON.stringify({ 
+          error: 'Server configuration error: Missing Flow API credentials' 
+        }),
+      };
+    }
+
+    // Get authentication token (with user credentials or env credentials)
+    const token = await authenticate(
+      headerClientId,
+      headerClientSecret,
+      headerTenant
+    );
 
     // Forward request to Flow API
     const response = await fetch(FLOW_CONFIG.apiUrl, {
@@ -137,8 +169,8 @@ exports.handler = async (event, context) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'FlowTenant': FLOW_CONFIG.tenant,
-        'FlowAgent': FLOW_CONFIG.agent,
+        'FlowTenant': headerTenant || FLOW_CONFIG.tenant,
+        'FlowAgent': headerAgent || FLOW_CONFIG.agent,
       },
       body: JSON.stringify(requestBody),
     });

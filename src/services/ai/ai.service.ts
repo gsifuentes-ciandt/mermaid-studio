@@ -1,6 +1,6 @@
 import { IAIProvider } from './providers';
 import { ProviderFactory } from './providers';
-import { AI_CONFIG } from './ai.config';
+import { AI_CONFIG, getAIConfigWithUserPreferences } from './ai.config';
 import {
   AIResponse,
   DiagramGenerationRequest,
@@ -29,6 +29,7 @@ import { errorTrackingService } from '../errorTracking.service';
 export class AIService {
   private provider: IAIProvider;
   private fallbackProvider?: IAIProvider;
+  private currentUserId?: string;
   
   constructor() {
     this.provider = ProviderFactory.createProvider(AI_CONFIG);
@@ -38,6 +39,32 @@ export class AIService {
     if (fallbackProviderType && fallbackProviderType !== AI_CONFIG.provider) {
       // Note: Fallback would need full config - simplified for MVP
       console.log('Fallback provider configured:', fallbackProviderType);
+    }
+  }
+  
+  /**
+   * Sets the current user and reloads AI config with user preferences
+   */
+  async setUser(userId: string | undefined) {
+    console.log('🤖 AIService.setUser called with userId:', userId);
+    this.currentUserId = userId;
+    
+    if (userId) {
+      // Reload config with user preferences
+      console.log('📥 Loading user config for userId:', userId);
+      const userConfig = await getAIConfigWithUserPreferences(userId);
+      console.log('📦 User config loaded:', { 
+        provider: userConfig.provider, 
+        hasFlowConfig: !!userConfig.flow,
+        hasFlowClientId: !!userConfig.flow?.clientId,
+        hasFlowClientSecret: !!userConfig.flow?.clientSecret
+      });
+      this.provider = ProviderFactory.createProvider(userConfig);
+      console.log('✅ AI provider reloaded with user preferences');
+    } else {
+      // Reset to base config
+      this.provider = ProviderFactory.createProvider(AI_CONFIG);
+      console.log('✅ AI provider reset to base config');
     }
   }
   

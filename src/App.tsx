@@ -12,9 +12,16 @@ import { AIButton } from './components/ai/AIButton';
 import { AIAssistant } from './components/ai/AIAssistant';
 import { DiffPreview } from './components/ai/DiffPreview';
 import { useAIStore } from './store/aiStore';
+import { aiService } from './services/ai/ai.service';
 
 function App(): ReactElement {
   const { open } = useAIStore();
+
+  // Initialize AI service for local mode (no user)
+  useEffect(() => {
+    // In local mode, there's no user, so just use base config
+    aiService.setUser(undefined);
+  }, []);
 
   // Keyboard shortcut: Cmd+K or Ctrl+K to open AI
   useEffect(() => {

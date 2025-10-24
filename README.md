@@ -2,12 +2,15 @@
 
 <div align="center">
 
-**A modern, professional application for creating, managing, and exporting Mermaid diagrams with enterprise-grade features.**
+**A modern, cloud-based collaboration platform for creating, managing, and sharing Mermaid diagrams with your team.**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue.svg)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61dafb.svg)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646cff.svg)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8.svg)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e.svg)](https://supabase.com/)
+
+**Version 2.0** - Now with Multi-User Collaboration! 🎉
 
 </div>
 
@@ -15,23 +18,36 @@
 
 ## 📖 Overview
 
-Mermaid Studio Pro is a comprehensive diagram management platform that transforms the way you create, organize, and share Mermaid diagrams. Built with modern web technologies, it offers a seamless experience for developers, architects, and technical teams who need to document systems, workflows, and processes.
+Mermaid Studio Pro is a cloud-based collaboration platform that transforms the way teams create, organize, and share Mermaid diagrams. Built with modern web technologies and powered by Supabase, it offers a seamless experience for developers, architects, and technical teams who need to document systems, workflows, and processes together.
 
 ### Why Mermaid Studio Pro?
 
+- 🤝 **Team Collaboration**: Share projects with role-based permissions (Owner, Admin, Editor, Viewer)
+- 🗂️ **Project Organization**: Organize diagrams in projects and nested folders
+- ☁️ **Cloud Storage**: All diagrams stored securely in PostgreSQL database
+- 🔐 **Secure Authentication**: Sign in with Google OAuth
 - 🎨 **Beautiful UI**: Modern, gradient-based design with smooth animations
 - 🤖 **AI-Powered**: Generate, modify, and explain diagrams with AI assistance
 - 🌙 **Dark Mode**: Full dark theme support for comfortable viewing
 - 🌍 **Internationalization**: Support for English, Spanish, and Portuguese
 - 📱 **Responsive**: Works perfectly on desktop, tablet, and mobile
-- 💾 **Local Storage**: Your diagrams are saved automatically in your browser
 - 🔍 **Advanced Search**: Find diagrams quickly with powerful filtering
 - 🎯 **Focus Mode**: Distraction-free diagram viewing
-- 📊 **Type-Specific Fields**: Special metadata for API endpoints and workflows
 
 ---
 
 ## ✨ Features
+
+### 🤝 Collaboration (NEW in v2.0)
+
+- **Multi-User Projects**: Create and share projects with your team
+- **Role-Based Permissions**: Control access with Owner, Admin, Editor, and Viewer roles
+- **Project Sharing**: Invite team members via email
+- **Folder Hierarchy**: Organize diagrams in nested folders
+- **Drag & Drop**: Reorder folders with intuitive drag-and-drop
+- **Team Dashboard**: View all your projects in one place
+- **User Preferences**: Per-user AI credentials and settings
+- **Secure Access**: Row-level security at the database level
 
 ### 🤖 AI Assistant
 
@@ -100,6 +116,7 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 - **Português** 🇧🇷
 - Auto-detects browser language
 - Persistent language preference
+- i18n ready for collaboration features
 
 ---
 
@@ -110,6 +127,14 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 - **[React 18.3](https://reactjs.org/)** - UI library with hooks and concurrent features
 - **[TypeScript 5.5](https://www.typescriptlang.org/)** - Type-safe JavaScript
 - **[Vite 5.4](https://vitejs.dev/)** - Lightning-fast build tool and dev server
+- **[React Router 6](https://reactrouter.com/)** - Client-side routing
+
+### Backend & Database
+
+- **[Supabase](https://supabase.com/)** - PostgreSQL database and authentication
+- **[PostgreSQL](https://www.postgresql.org/)** - Relational database with RLS
+- **Row Level Security** - Database-level access control
+- **Google OAuth** - Secure authentication
 
 ### Styling & UI
 
@@ -120,8 +145,8 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 ### State Management & Data
 
 - **[Zustand](https://github.com/pmndrs/zustand)** - Lightweight state management
-- **LocalStorage API** - Client-side data persistence
-- **Custom Hooks** - Reusable logic for rendering, debouncing, and more
+- **React Context** - User state caching and theme management
+- **Custom Hooks** - Reusable logic for rendering, permissions, and more
 
 ### Diagram Rendering
 
@@ -147,8 +172,10 @@ Mermaid Studio Pro is a comprehensive diagram management platform that transform
 
 - Node.js 18+ and npm/yarn/pnpm
 - Modern web browser (Chrome, Firefox, Safari, Edge)
+- Supabase account (free tier available)
+- Google Cloud Console account (for OAuth)
 
-### Installation
+### Quick Start
 
 ```bash
 # Clone the repository
@@ -158,30 +185,30 @@ cd mermaid-studio
 # Install dependencies
 npm install
 
-# Install proxy server dependencies (for AI features)
-cd server
-npm install
-cd ..
-
 # Copy environment variables
 cp .env.local.example .env.local
-# Edit .env.local with your API keys
+# Edit .env.local with your Supabase and API keys
 
-# Start proxy server (Terminal 1)
-cd server
-npm start
-
-# Start development server (Terminal 2)
+# Start development server
 npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
 ```
 
-**Important:** The AI features require a proxy server to handle Flow API requests. See [PROXY-SETUP.md](./PROXY-SETUP.md) for detailed setup instructions.
+### Full Setup (with Collaboration)
+
+For complete setup instructions including Supabase configuration and Google OAuth:
+
+📖 **See [docs/collaboration/SETUP-GUIDE.md](docs/collaboration/SETUP-GUIDE.md)**
+
+Setup time: ~30-45 minutes
+
+### Development Scripts
+
+```bash
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run type-check   # Run TypeScript type checking
+```
 
 ### Development Scripts
 
@@ -204,39 +231,57 @@ mermaid-studio/
 │   ├── components/           # React components
 │   │   ├── ai/              # AI assistant components
 │   │   ├── diagram/         # Diagram-related components
-│   │   ├── layout/          # Layout components (Header, Toolbar)
+│   │   ├── folders/         # Folder management components
+│   │   ├── layout/          # Layout components
 │   │   ├── modals/          # Modal dialogs
+│   │   ├── projects/        # Project components
+│   │   ├── sharing/         # Share modal and invitation
 │   │   ├── ui/              # Reusable UI components
 │   │   └── zoom/            # Zoom modal components
-│   ├── contexts/            # React contexts (Theme, i18n)
+│   ├── contexts/            # React contexts
+│   │   ├── ThemeContext.tsx # Dark mode management
+│   │   ├── I18nContext.tsx  # Internationalization
+│   │   └── UserContext.tsx  # User state caching
 │   ├── hooks/               # Custom React hooks
+│   │   ├── useProjectPermissions.ts
+│   │   ├── useMermaidRenderer.ts
+│   │   └── useDebouncedValue.ts
+│   ├── pages/               # Page components
+│   │   ├── DashboardPage.tsx
+│   │   ├── ProjectPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   └── SettingsPage.tsx
 │   ├── services/            # Business logic
 │   │   ├── ai/              # AI service layer
-│   │   │   ├── providers/   # AI provider implementations
-│   │   │   └── prompts/     # System prompts
-│   │   ├── export.service.ts
-│   │   ├── import.service.ts
-│   │   └── mermaid.service.ts
+│   │   ├── auth.service.ts  # Authentication
+│   │   ├── project.service.ts
+│   │   ├── folder.service.ts
+│   │   ├── invitation.service.ts
+│   │   └── supabase.ts      # Supabase client
 │   ├── store/               # Zustand stores
-│   │   ├── aiStore.ts       # AI state management
+│   │   ├── aiStore.ts
 │   │   ├── diagramStore.ts
+│   │   ├── projectStore.ts
 │   │   └── uiStore.ts
-│   ├── styles/              # Global styles
 │   ├── types/               # TypeScript type definitions
-│   ├── utils/               # Utility functions
-│   ├── App.tsx              # Main app component
-│   ├── env.d.ts             # Environment variable types
+│   │   ├── diagram.types.ts
+│   │   └── collaboration.types.ts
+│   ├── AppRouter.tsx        # Main router
 │   └── main.tsx             # App entry point
 ├── docs/                     # Documentation
-│   ├── ai/                  # AI implementation guides
-│   └── legacy-index.html    # Original HTML implementation
+│   ├── collaboration/       # Collaboration guides
+│   │   ├── SETUP-GUIDE.md
+│   │   ├── I18N-GUIDE.md
+│   │   └── PERMISSIONS.md
+│   ├── database/            # Database schema and fixes
+│   │   └── DATABASE_SCHEMA.sql
+│   ├── deployment/          # Deployment guides
+│   └── development/         # Development guides
 ├── .env.local                # Environment variables (not in git)
 ├── AGENTS.md                 # AI agent guidelines
+├── CHANGELOG.md              # Version history
 ├── README.md                 # This file
-├── package.json              # Dependencies and scripts
-├── tailwind.config.ts        # Tailwind configuration
-├── tsconfig.json             # TypeScript configuration
-└── vite.config.ts            # Vite configuration
+└── package.json              # Dependencies and scripts
 ```
 
 ---
@@ -299,9 +344,35 @@ The app supports multiple languages:
 
 ## 🚀 Deployment
 
-This project is automatically deployed to Netlify from the `main` branch.
+This project is configured for Netlify deployment.
 
-Visit: [https://mermaid-studio.netlify.app](https://mermaid-studio.netlify.app)
+### Deployment Steps:
+
+1. **Set up Supabase** (see [docs/collaboration/SETUP-GUIDE.md](docs/collaboration/SETUP-GUIDE.md))
+2. **Configure Google OAuth** with production redirect URIs
+3. **Add environment variables** to Netlify:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. **Push to main branch** - Netlify auto-deploys
+
+📖 **Full deployment guide**: [docs/deployment/NETLIFY.md](docs/deployment/NETLIFY.md)
+
+### Cost
+
+- **Supabase**: Free tier (500MB DB, 50K MAU)
+- **Netlify**: Free tier (100GB bandwidth)
+- **Total**: $0/month for MVP
+
+---
+
+## 📚 Documentation
+
+- **[AGENTS.md](AGENTS.md)** - AI agent guidelines and project conventions
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[docs/collaboration/SETUP-GUIDE.md](docs/collaboration/SETUP-GUIDE.md)** - Complete setup instructions
+- **[docs/collaboration/I18N-GUIDE.md](docs/collaboration/I18N-GUIDE.md)** - Internationalization guide
+- **[docs/deployment/NETLIFY.md](docs/deployment/NETLIFY.md)** - Deployment guide
+- **[docs/database/DATABASE_SCHEMA.sql](docs/database/DATABASE_SCHEMA.sql)** - Database schema
 
 ---
 
@@ -317,12 +388,14 @@ Contributions are welcome! Please follow these steps:
 
 ### Development Guidelines
 
+- Read **[AGENTS.md](AGENTS.md)** for project conventions
 - Follow the existing code style
 - Write TypeScript with proper types
 - Use Tailwind CSS for styling
 - Test in both light and dark modes
 - Ensure responsive design works on all screen sizes
-- Add translations for new UI text
+- Add translations for new UI text (EN, ES, PT)
+- Test with different user roles (Owner, Admin, Editor, Viewer)
 
 ---
 

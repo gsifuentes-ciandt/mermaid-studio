@@ -25,42 +25,57 @@ app.use(cors({
 
 app.use(express.json());
 
-// Flow API configuration
+// Flow API configuration (defaults from env, can be overridden by request headers)
 const FLOW_CONFIG = {
   authUrl: 'https://flow.ciandt.com/auth-engine-api/v1/api-key/token',
   apiUrl: 'https://flow.ciandt.com/ai-orchestration-api/v1/openai/chat/completions',
-  clientId: process.env.FLOW_CLIENT_ID,
-  clientSecret: process.env.FLOW_CLIENT_SECRET,
+  clientId: process.env.FLOW_CLIENT_ID || null,
+  clientSecret: process.env.FLOW_CLIENT_SECRET || null,
   appToAccess: process.env.FLOW_APP_TO_ACCESS || 'llm-api',
   tenant: process.env.FLOW_TENANT || 'lithiadw',
   agent: process.env.FLOW_AGENT || 'mermaid-studio'
 };
 
-// Validate required environment variables
+// Note: Credentials can come from env variables OR from request headers
 if (!FLOW_CONFIG.clientId || !FLOW_CONFIG.clientSecret) {
-  console.error('ERROR: FLOW_CLIENT_ID and FLOW_CLIENT_SECRET environment variables are required');
-  process.exit(1);
+  console.log('⚠️  No FLOW_CLIENT_ID/FLOW_CLIENT_SECRET in .env.local');
+  console.log('✅ Proxy will use credentials from request headers (user preferences)');
+} else {
+  console.log('✅ Using FLOW credentials from .env.local');
 }
 
 let cachedToken = null;
 let tokenExpiry = null;
 
 // Authenticate with Flow API
-async function authenticate() {
-  // Return cached token if still valid
-  if (cachedToken && tokenExpiry && new Date() < tokenExpiry) {
-    return cachedToken;
+async function authenticate(clientId, clientSecret, tenant) {
+  // Use provided credentials or fall back to env config
+  const authClientId = clientId || FLOW_CONFIG.clientId;
+  const authClientSecret = clientSecret || FLOW_CONFIG.clientSecret;
+  const authTenant = tenant || FLOW_CONFIG.tenant;
+  
+  if (!authClientId || !authClientSecret) {
+    throw new Error('Missing Flow API credentials. Provide via env variables or request headers.');
+  }
+  
+  // Create cache key based on credentials
+  const cacheKey = `${authClientId}:${authTenant}`;
+  
+  // Return cached token if still valid (per-user cache)
+  if (cachedToken && cachedToken.key === cacheKey && tokenExpiry && new Date() < tokenExpiry) {
+    return cachedToken.token;
   }
 
   try {
     console.log('🔐 Attempting authentication with Flow API...');
     console.log('📋 Auth URL:', FLOW_CONFIG.authUrl);
-    console.log('📋 Client ID:', FLOW_CONFIG.clientId);
+    console.log('📋 Client ID:', authClientId);
+    console.log('📋 Tenant:', authTenant);
     console.log('📋 App to Access:', FLOW_CONFIG.appToAccess);
     
     const authPayload = {
-      clientId: FLOW_CONFIG.clientId,
-      clientSecret: FLOW_CONFIG.clientSecret,
+      clientId: authClientId,
+      clientSecret: authClientSecret,
       appToAccess: FLOW_CONFIG.appToAccess,
     };
     
@@ -68,7 +83,7 @@ async function authenticate() {
     
     const authHeaders = {
       'Content-Type': 'application/json',
-      'FlowTenant': FLOW_CONFIG.tenant,
+      'FlowTenant': authTenant,
     };
     
     console.log('📋 Auth Headers:', JSON.stringify(authHeaders, null, 2));
@@ -91,14 +106,18 @@ async function authenticate() {
 
     const data = await response.json();
     console.log('✅ Auth response received:', { hasToken: !!data.access_token, expiresIn: data.expires_in });
-    cachedToken = data.access_token;
+    
+    const token = data.access_token;
+    
+    // Cache token with key
+    cachedToken = { key: cacheKey, token };
 
     // Set token expiry (default 1 hour, minus 5 minutes buffer)
     const expiresIn = (data.expires_in || 3600) - 300;
     tokenExpiry = new Date(Date.now() + expiresIn * 1000);
 
     console.log('✅ Successfully authenticated with Flow API');
-    return cachedToken;
+    return token;
   } catch (error) {
     console.error('❌ Authentication error:', error.message);
     throw error;
@@ -118,20 +137,35 @@ app.post('/api/chat/completions', async (req, res) => {
     console.log('📋 Model:', req.body.model);
     console.log('📋 Messages:', req.body.messages?.length || 0, 'messages');
     
+    // Extract credentials from headers (if provided by frontend)
+    const headerClientId = req.headers['x-flow-client-id'];
+    const headerClientSecret = req.headers['x-flow-client-secret'];
+    const headerTenant = req.headers['x-flow-tenant'];
+    const headerAgent = req.headers['x-flow-agent'];
+    
+    if (headerClientId && headerClientSecret) {
+      console.log('🔑 Using credentials from request headers (user preferences)');
+    } else {
+      console.log('🔑 Using credentials from .env.local');
+    }
+    
     console.log('\n🔐 Step 1: Authenticating...');
-    const token = await authenticate();
+    const token = await authenticate(headerClientId, headerClientSecret, headerTenant);
     console.log('✅ Authentication successful, token obtained');
+    
+    const tenant = headerTenant || FLOW_CONFIG.tenant;
+    const agent = headerAgent || FLOW_CONFIG.agent;
     
     console.log('\n📤 Step 2: Sending request to Flow API...');
     console.log('🌐 URL:', FLOW_CONFIG.apiUrl);
-    console.log('🏢 Tenant:', FLOW_CONFIG.tenant);
-    console.log('🤖 Agent:', FLOW_CONFIG.agent);
+    console.log('🏢 Tenant:', tenant);
+    console.log('🤖 Agent:', agent);
     
     const requestHeaders = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'FlowTenant': FLOW_CONFIG.tenant,
-      'FlowAgent': FLOW_CONFIG.agent,
+      'FlowTenant': tenant,
+      'FlowAgent': agent,
     };
     
     console.log('📋 Request Headers:', JSON.stringify(requestHeaders, null, 2));

@@ -6,16 +6,20 @@ This file provides context, architecture, and guidelines for AI agents (like Cla
 
 ## 📋 Project Overview
 
-**Mermaid Studio Pro** is a modern React + TypeScript application for managing Mermaid diagrams. It was migrated from a legacy 2,190-line HTML file to a modern, maintainable architecture.
+**Mermaid Studio Pro v2.0** is a cloud-based collaboration platform for creating, managing, and sharing Mermaid diagrams with teams. It evolved from a single-user localStorage app to a full multi-user platform with Supabase backend.
 
 ### Key Facts
 
-- **Purpose**: Professional diagram management platform for developers and technical teams
-- **Tech Stack**: React 18.3, TypeScript 5.5, Vite 5.4, TailwindCSS 3.4, Zustand
+- **Purpose**: Multi-user diagram collaboration platform for technical teams
+- **Version**: 2.0 (Collaboration Release - October 2025)
+- **Tech Stack**: React 18.3, TypeScript 5.5, Vite 5.4, TailwindCSS 3.4, Zustand, React Router 6
+- **Backend**: Supabase (PostgreSQL + Auth + RLS)
+- **Authentication**: Google OAuth via Supabase
 - **AI Integration**: Flow API (primary), OpenAI (fallback) for diagram generation
-- **Storage**: LocalStorage (client-side persistence)
+- **Storage**: Supabase PostgreSQL (cloud) with Row Level Security
 - **Deployment**: Netlify (automatic from `main` branch)
 - **Languages**: English, Spanish, Portuguese (i18n support)
+- **Cost**: $0/month (free tier)
 
 ---
 
@@ -36,48 +40,74 @@ src/
 │   ├── diagram/          # Diagram display and management
 │   │   ├── DiagramGrid.tsx      # Main grid with pagination (12 per page)
 │   │   └── DiagramCard.tsx      # Individual diagram cards
+│   ├── folders/          # Folder management (NEW in v2.0)
+│   │   ├── FolderList.tsx       # Nested folder tree with drag-drop
+│   │   ├── CreateFolderModal.tsx
+│   │   └── EditFolderModal.tsx
 │   ├── layout/           # App layout and navigation
 │   │   ├── Layout.tsx           # Main layout wrapper
 │   │   ├── AppHeader.tsx        # Sticky header with logo, language, theme
-│   │   ├── Header.tsx           # Welcome message section
-│   │   ├── Toolbar.tsx          # Action buttons (Add, Export, Import, etc.)
-│   │   └── SearchFilterBar.tsx  # Search and type filtering
-│   ├── modals/           # Modal dialogs
-│   │   ├── DiagramModal.tsx     # Add/Edit diagram modal
-│   │   ├── DiagramForm.tsx      # Diagram creation/edit form
-│   │   ├── InfoModal.tsx        # View diagram details
-│   │   ├── EndpointFields.tsx   # API-specific fields
-│   │   └── WorkflowFields.tsx   # Workflow-specific fields
+│   │   ├── UserMenu.tsx         # User profile dropdown (NEW)
+│   │   ├── Sidebar.tsx          # Project sidebar (NEW)
+│   │   └── MobileDrawer.tsx     # Mobile navigation (NEW)
+│   ├── projects/         # Project components (NEW in v2.0)
+│   │   ├── ProjectCard.tsx      # Project card in dashboard
+│   │   ├── ProjectHeader.tsx    # Project page header
+│   │   ├── CreateProjectModal.tsx
+│   │   └── ProjectSettingsModal.tsx
+│   ├── sharing/          # Collaboration features (NEW in v2.0)
+│   │   ├── ShareModal.tsx       # Share project with team
+│   │   └── InvitationBanner.tsx # Pending invitation banner
 │   ├── ui/               # Reusable UI components
 │   │   ├── Button.tsx
 │   │   ├── Input.tsx
 │   │   ├── Select.tsx
 │   │   ├── Textarea.tsx
 │   │   ├── Modal.tsx
-│   │   └── Pagination.tsx
+│   │   ├── Pagination.tsx
+│   │   └── ConfirmModal.tsx     # Confirmation dialog (NEW)
 │   └── zoom/             # Zoom/focus mode
 │       └── ZoomModal.tsx        # Full-screen diagram viewer
 ├── contexts/             # React contexts
 │   ├── ThemeContext.tsx         # Dark/light mode management
-│   └── I18nContext.tsx          # Internationalization
+│   ├── I18nContext.tsx          # Internationalization
+│   └── UserContext.tsx          # User state caching (NEW in v2.0)
 ├── hooks/                # Custom hooks
 │   ├── useMermaidRenderer.ts   # Diagram rendering logic
 │   ├── useDebouncedValue.ts    # Debounced search
-│   └── useDiagramActions.ts    # Diagram CRUD operations
+│   ├── useDiagramActions.ts    # Diagram CRUD operations
+│   └── useProjectPermissions.ts # Permission checks (NEW in v2.0)
+├── pages/                # Page components (NEW in v2.0)
+│   ├── LoginPage.tsx            # Google OAuth login
+│   ├── DashboardPage.tsx        # Project dashboard
+│   ├── ProjectPage.tsx          # Project detail view
+│   └── SettingsPage.tsx         # User settings
 ├── services/             # Business logic
-│   ├── mermaid.service.ts      # Mermaid.js integration
-│   ├── export.service.ts       # Export (JSON, SVG, PNG, ZIP)
-│   ├── import.service.ts       # Import from JSON
-│   └── storage.service.ts      # LocalStorage operations
+│   ├── ai/                      # AI service layer
+│   │   ├── providers/           # Flow & OpenAI providers
+│   │   └── prompts/             # System prompts
+│   ├── supabase.ts              # Supabase client (NEW)
+│   ├── auth.service.ts          # Authentication (NEW)
+│   ├── project.service.ts       # Projects CRUD (NEW)
+│   ├── folder.service.ts        # Folders CRUD (NEW)
+│   ├── invitation.service.ts    # Invitations (NEW)
+│   ├── mermaid.service.ts       # Mermaid.js integration
+│   ├── export.service.ts        # Export (JSON, SVG, PNG, ZIP)
+│   └── import.service.ts        # Import from JSON
 ├── store/                # Zustand state management
-│   ├── diagramStore.ts         # Diagram data and filtering
-│   ├── uiStore.ts              # UI state (modals, etc.)
-│   └── renderStore.ts          # Rendering cache
+│   ├── aiStore.ts               # AI state
+│   ├── diagramStore.ts          # Diagram data and filtering
+│   ├── projectStore.ts          # Projects & folders (NEW in v2.0)
+│   ├── uiStore.ts               # UI state (modals, etc.)
+│   └── renderStore.ts           # Rendering cache
 ├── types/                # TypeScript definitions
-│   └── diagram.types.ts        # Diagram, Payload, etc.
-└── utils/                # Utility functions
-    ├── cn.ts                   # Class name utility
-    └── diagram.utils.ts        # Diagram helpers
+│   ├── diagram.types.ts         # Diagram, Payload, etc.
+│   └── collaboration.types.ts   # Project, Folder, Member (NEW)
+├── utils/                # Utility functions
+│   ├── cn.ts                    # Class name utility
+│   └── diagram.utils.ts         # Diagram helpers
+├── AppRouter.tsx         # Main router with protected routes (NEW)
+└── main.tsx              # App entry point
 ```
 
 ### State Management (Zustand)
@@ -89,15 +119,96 @@ src/
 - Actions: `addDiagram`, `updateDiagram`, `deleteDiagram`, `clearAll`, `setAll`, `setFilters`
 - Computed: `filteredDiagrams()` - applies search and type filters
 
+**projectStore.ts** (NEW in v2.0)
+- `currentProject`: Current project object
+- `projects`: Array of user's projects
+- `folders`: Array of folders in current project
+- `currentFolder`: Currently selected folder
+- `members`: Array of project members
+- `loading`: Loading states
+- Actions: `fetchProjects`, `fetchProject`, `fetchFolders`, `setCurrentFolder`, `addFolder`, `updateFolder`, `deleteFolder`
+
 **uiStore.ts**
 - `diagramModal`: { isOpen, editingDiagramId }
 - `infoModal`: { isOpen, diagramId }
 - `zoomModal`: { isOpen, diagramId }
-- Actions: `openDiagramModal`, `closeDiagramModal`, `openInfoModal`, `closeInfoModal`, `openZoomModal`, `closeZoomModal`
+- `projectModal`: { isOpen, editingProjectId } (NEW)
+- `folderModal`: { isOpen, editingFolderId, parentId } (NEW)
+- Actions: Modal open/close for all modals
+
+**aiStore.ts**
+- `isOpen`: AI panel open state
+- `messages`: Chat history
+- `contextDiagram`: Current diagram context
+- Actions: `open`, `close`, `addMessage`, `setContextDiagram`
 
 **renderStore.ts**
 - Caches rendered SVGs to avoid re-rendering
 - Key: diagram code hash
+
+---
+
+## 🤝 Collaboration Features (v2.0)
+
+### Role-Based Permissions
+
+| Role | View | Create | Edit | Delete | Invite | Settings |
+|------|------|--------|------|--------|--------|----------|
+| **Owner** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Admin** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Editor** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Viewer** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+### Permission Checking
+
+Use `useProjectPermissions()` hook in components:
+
+```typescript
+const permissions = useProjectPermissions();
+
+if (permissions.canEditDiagram) {
+  // Show edit button
+}
+
+if (permissions.canDeleteFolder) {
+  // Show delete button
+}
+```
+
+### Database Security
+
+- **Row Level Security (RLS)**: All tables have RLS policies
+- **Security Definer Function**: `user_has_project_access()` prevents RLS recursion
+- **JWT Authentication**: Supabase handles token management
+- **Encrypted Credentials**: User API keys stored encrypted
+
+### User State Caching
+
+- **UserContext**: Caches user globally to avoid excessive API calls
+- **Performance**: Reduced from 20+ `/user` calls to 1 per page load
+- **Usage**: `const { user, loading } = useUser()`
+
+### Project Hierarchy
+
+```
+Project
+├── Folder (root level)
+│   ├── Diagram
+│   ├── Diagram
+│   └── Subfolder
+│       ├── Diagram
+│       └── Diagram
+└── Folder (root level)
+    └── Diagram
+```
+
+### Key Components
+
+- **DashboardPage**: List all user's projects
+- **ProjectPage**: View project with folder sidebar
+- **FolderList**: Nested folder tree with drag-drop
+- **ShareModal**: Invite members and manage roles
+- **ProjectSettingsModal**: Edit project name, description, delete
 
 ---
 

@@ -5,6 +5,7 @@ import { useDiagramStore } from '@/store/diagramStore';
 import { useUIStore } from '@/store/uiStore';
 import { useAIStore } from '@/store/aiStore';
 import { useMermaidRenderer } from '@/hooks/useMermaidRenderer';
+import { useProjectPermissions } from '@/hooks/useProjectPermissions';
 import { exportDiagramSvg, exportDiagramPng } from '@/services/export.service';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useI18n } from '@/contexts/I18nContext';
@@ -25,6 +26,7 @@ const typeColors: Record<string, string> = {
 
 export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
   const { t } = useI18n();
+  const permissions = useProjectPermissions();
   const deleteDiagram = useDiagramStore((state) => state.deleteDiagram);
   const openDiagramModal = useUIStore((state) => state.openDiagramModal);
   const openInfoModal = useUIStore((state) => state.openInfoModal);
@@ -87,7 +89,7 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
   };
 
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md transition-all hover:shadow-xl dark:border-gray-700 dark:bg-gray-800">
+    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md transition-all hover:shadow-xl dark:border-gray-700 dark:bg-gray-800 min-w-0 max-w-full">
       <div className="border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -145,30 +147,34 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
               />
             </div>
             
-            {/* Floating Action Button - Top Left: Delete (Dangerous Action) */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete();
-              }}
-              className="absolute top-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-red-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-red-500 hover:scale-110 group-hover:opacity-100 opacity-60"
-              title="Delete Diagram"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-
-            {/* Floating Action Buttons - Top Right: Edit, Info */}
-            <div className="absolute top-3 right-3 z-10 flex gap-2">
+            {/* Floating Action Button - Top Left: Delete (Dangerous Action) - Only for editors/admins/owners */}
+            {permissions.canDeleteDiagram && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleEdit();
+                  handleDelete();
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-amber-500 hover:scale-110 group-hover:opacity-100 opacity-60"
-                title="Edit Diagram"
+                className="absolute top-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-red-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-red-500 hover:scale-110 group-hover:opacity-100 opacity-60"
+                title="Delete Diagram"
               >
-                <Edit className="h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </button>
+            )}
+
+            {/* Floating Action Buttons - Top Right: Edit, Info */}
+            <div className="absolute top-3 right-3 z-10 flex gap-2">
+              {permissions.canEditDiagram && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit();
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/80 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-amber-500 hover:scale-110 group-hover:opacity-100 opacity-60"
+                  title="Edit Diagram"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -219,17 +225,19 @@ export function DiagramCard({ diagram }: DiagramCardProps): JSX.Element {
               </div>
             </div>
 
-            {/* Floating Action Button - Bottom Right: AI Assistant */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAIEdit();
-              }}
-              className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 to-purple-600 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl group-hover:opacity-100 opacity-60"
-              title="Edit with AI"
-            >
-              <Sparkles className="h-5 w-5" />
-            </button>
+            {/* AI Edit Button - Bottom Right - Only for editors/admins/owners */}
+            {permissions.canEditDiagram && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAIEdit();
+                }}
+                className="absolute bottom-3 right-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-primary-500 to-purple-600 text-white shadow-lg transition-all hover:scale-110 hover:shadow-xl group-hover:opacity-100 opacity-60"
+                title="Edit with AI"
+              >
+                <Sparkles className="h-5 w-5" />
+              </button>
+            )}
           </>
         )}
       </div>

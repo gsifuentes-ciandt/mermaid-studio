@@ -117,7 +117,7 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form id="diagram-form" onSubmit={handleSubmit} className="space-y-6">
       {/* Info Card */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/30">
         <div className="mb-2 font-semibold text-blue-900 dark:text-blue-300">💡 {t('form.proTip.title')}</div>
@@ -235,15 +235,6 @@ export function DiagramForm({ diagram, onClose }: DiagramFormProps): JSX.Element
         />
       </div>
 
-      {/* Footer Buttons */}
-      <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-700">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          {t('form.button.cancel')}
-        </Button>
-        <Button type="submit" variant="primary">
-          {t('form.button.save')}
-        </Button>
-      </div>
     </form>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { FileText, Workflow, Wrench, Building2, GitBranch, FileCode } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { DiagramForm } from './DiagramForm';
+import { Button } from '@/components/ui/Button';
 import { useUIStore } from '@/store/uiStore';
 import { useDiagramStore } from '@/store/diagramStore';
 import { useI18n } from '@/contexts/I18nContext';
@@ -46,8 +47,20 @@ export function DiagramModal(): JSX.Element {
     </>
   ) : baseTitle;
 
+  // Footer with sticky buttons
+  const footer = (
+    <>
+      <Button type="button" variant="secondary" onClick={closeDiagramModal}>
+        {t('form.button.cancel')}
+      </Button>
+      <Button type="submit" form="diagram-form" variant="primary">
+        {t('form.button.save')}
+      </Button>
+    </>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={closeDiagramModal} title={title} size="xl">
+    <Modal isOpen={isOpen} onClose={closeDiagramModal} title={title} size="xl" footer={footer}>
       <DiagramForm diagram={editingDiagram} onClose={closeDiagramModal} />
     </Modal>
   );
