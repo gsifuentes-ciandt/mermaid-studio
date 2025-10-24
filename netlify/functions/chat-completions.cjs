@@ -10,9 +10,9 @@
  * - FLOW_APP_TO_ACCESS (default: llm-api)
  * - FLOW_TENANT (default: lithiadw)
  * - FLOW_AGENT (default: mermaid-studio)
+ * 
+ * Note: Using native fetch (Node.js 18+)
  */
-
-const fetch = require('node-fetch');
 
 // Flow API configuration
 const FLOW_CONFIG = {
