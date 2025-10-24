@@ -8,8 +8,6 @@
 
 [functions]
   node_bundler = "esbuild"
-  # Use Node.js 18.x for functions
-  node_version = "18"
 
 # Redirect API calls to Netlify Functions
 [[redirects]]
