@@ -5,6 +5,7 @@
 
 import { type ReactElement, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { logger } from './utils/logger';
 import { useAuthStore } from './store/authStore';
 import { isSupabaseConfigured } from './services/supabase';
 import { isDemoMode } from './services/demo.service';
@@ -55,12 +56,12 @@ export function AppRouter(): ReactElement {
   
   // Update AI service with user credentials when user changes
   useEffect(() => {
-    console.log('👤 AppRouter: User changed:', user ? `ID: ${user.id}, Email: ${user.email}` : 'No user');
+    logger.log('👤 AppRouter: User changed:', user ? `ID: ${user.id}, Email: ${user.email}` : 'No user');
     if (user) {
-      console.log('🔄 Calling aiService.setUser with user ID:', user.id);
+      logger.log('🔄 Calling aiService.setUser with user ID:', user.id);
       aiService.setUser(user.id);
     } else {
-      console.log('🔄 Calling aiService.setUser with undefined (no user)');
+      logger.log('🔄 Calling aiService.setUser with undefined (no user)');
       aiService.setUser(undefined);
     }
   }, [user]);

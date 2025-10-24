@@ -1,4 +1,5 @@
 import mermaid from 'mermaid';
+import { logger } from '../../utils/logger';
 
 /**
  * Decode HTML entities
@@ -163,14 +164,14 @@ export function extractMermaidCode(content: string): string {
   const codeBlockRegex = /```([^\n]*)\n([\s\S]*?)```/g;
   const matches = Array.from(content.matchAll(codeBlockRegex));
   
-  console.log(`🔍 Strategy 1: Found ${matches.length} code blocks`);
+  logger.log(`🔍 Strategy 1: Found ${matches.length} code blocks`);
   
   for (let i = 0; i < matches.length; i++) {
     const languageSpec = matches[i][1].trim();
     const blockContent = matches[i][2];
     
-    console.log(`📦 Block ${i + 1} language: "${languageSpec}"`);
-    console.log(`📦 Block ${i + 1} first 100 chars:`, blockContent.substring(0, 100));
+    logger.log(`📦 Block ${i + 1} language: "${languageSpec}"`);
+    logger.log(`📦 Block ${i + 1} first 100 chars:`, blockContent.substring(0, 100));
     
     // Check if language specifier contains diagram keyword (e.g., ```flowchart TD)
     const langDiagramRegex = new RegExp(`^(${diagramKeywords})`, 'i');
@@ -178,18 +179,18 @@ export function extractMermaidCode(content: string): string {
     
     if (langMatch) {
       // Diagram keyword is in language specifier - prepend it to content
-      console.log(`✅ Block ${i + 1} has diagram keyword in language spec: ${langMatch[1]}`);
+      logger.log(`✅ Block ${i + 1} has diagram keyword in language spec: ${langMatch[1]}`);
       let code = languageSpec + '\n' + blockContent;
       code = code.trim();
       
-      console.log(`🎯 Extracted code length: ${code.length}`);
+      logger.log(`🎯 Extracted code length: ${code.length}`);
       return sanitizeMermaidCode(code);
     }
     
     // Check if block content starts with diagram keyword
     const contentDiagramRegex = new RegExp(`^\\s*(${diagramKeywords})\\s`, 'im');
     if (contentDiagramRegex.test(blockContent)) {
-      console.log(`✅ Block ${i + 1} contains diagram keyword in content!`);
+      logger.log(`✅ Block ${i + 1} contains diagram keyword in content!`);
       
       // Simply return the entire block content since it starts with diagram keyword
       let code = blockContent.trim();
@@ -199,11 +200,11 @@ export function extractMermaidCode(content: string): string {
         code = 'flowchart ' + code;
       }
       
-      console.log(`🎯 Extracted code length: ${code.length}`);
-      console.log(`🎯 First 100 chars: ${code.substring(0, 100)}`);
+      logger.log(`🎯 Extracted code length: ${code.length}`);
+      logger.log(`🎯 First 100 chars: ${code.substring(0, 100)}`);
       return sanitizeMermaidCode(code);
     } else {
-      console.log(`❌ Block ${i + 1} does NOT contain diagram keyword`);
+      logger.log(`❌ Block ${i + 1} does NOT contain diagram keyword`);
     }
   }
   
@@ -212,39 +213,39 @@ export function extractMermaidCode(content: string): string {
   const allCodeBlocks = content.matchAll(/```(?:mermaid|flowchart|graph)\s*\r?\n([\s\S]*?)\r?\n```/g);
   const blocks = Array.from(allCodeBlocks);
   
-  console.log(`📦 Strategy 2: Found ${blocks.length} mermaid/flowchart/graph code blocks`);
+  logger.log(`📦 Strategy 2: Found ${blocks.length} mermaid/flowchart/graph code blocks`);
   
   if (blocks.length > 0) {
     const lastBlock = blocks[blocks.length - 1];
     let code = lastBlock[1].trim();
     
-    console.log(`📦 Strategy 2: Extracted code from last block (${code.length} chars)`);
-    console.log(`📦 Strategy 2: First 100 chars:`, code.substring(0, 100));
+    logger.log(`📦 Strategy 2: Extracted code from last block (${code.length} chars)`);
+    logger.log(`📦 Strategy 2: First 100 chars:`, code.substring(0, 100));
     
     // Verify it looks like Mermaid code (not markdown or other content)
     // Reject if it starts with markdown syntax like ---, **, #, etc.
     if (/^(---|[*#]|\*\*|__)/m.test(code)) {
-      console.log('⚠️ Strategy 2: Rejected code block - starts with markdown syntax');
+      logger.log('⚠️ Strategy 2: Rejected code block - starts with markdown syntax');
     } else {
       // Fix direction on separate line
       if (/^(TD|LR|TB|RL|BT)\s*$/m.test(code.split('\n')[0])) {
         code = 'flowchart ' + code;
       }
       
-      console.log('✅ Strategy 2: Returning code');
+      logger.log('✅ Strategy 2: Returning code');
       return sanitizeMermaidCode(code);
     }
   }
   
   // Strategy 3: If no code block, try to find mermaid syntax directly in text
-  console.log('📦 Strategy 3: Searching for Mermaid keywords in text');
+  logger.log('📦 Strategy 3: Searching for Mermaid keywords in text');
   const lines = content.split('\n');
   const mermaidStart = lines.findIndex(line => 
     /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|C4Context)/i.test(line.trim())
   );
   
   if (mermaidStart !== -1) {
-    console.log(`📦 Strategy 3: Found Mermaid keyword at line ${mermaidStart}`);
+    logger.log(`📦 Strategy 3: Found Mermaid keyword at line ${mermaidStart}`);
     // Find the end (stop at ``` or end of content)
     let mermaidEnd = lines.length;
     for (let i = mermaidStart + 1; i < lines.length; i++) {
@@ -254,7 +255,7 @@ export function extractMermaidCode(content: string): string {
       }
     }
     const extracted = lines.slice(mermaidStart, mermaidEnd).join('\n').trim();
-    console.log(`✅ Strategy 3: Returning code (${extracted.length} chars)`);
+    logger.log(`✅ Strategy 3: Returning code (${extracted.length} chars)`);
     return sanitizeMermaidCode(extracted);
   }
   
@@ -267,7 +268,7 @@ export function extractMermaidCode(content: string): string {
   
   // No Mermaid code found - return empty string
   // This allows AI to respond with explanations only
-  console.log('⚠️ No Mermaid code found in response');
+  logger.log('⚠️ No Mermaid code found in response');
   return '';
 }
 
@@ -279,14 +280,14 @@ function isValidMermaidCode(code: string): boolean {
   
   // Reject if starts with markdown syntax
   if (/^(---|[*#]|\*\*|__|>|-)/.test(code.trim())) {
-    console.log('⚠️ Rejected: starts with markdown syntax');
+    logger.log('⚠️ Rejected: starts with markdown syntax');
     return false;
   }
   
   // Must start with a Mermaid keyword
   const diagramKeywords = /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|C4Context)/i;
   if (!diagramKeywords.test(code.trim())) {
-    console.log('⚠️ Rejected: does not start with Mermaid keyword');
+    logger.log('⚠️ Rejected: does not start with Mermaid keyword');
     return false;
   }
   

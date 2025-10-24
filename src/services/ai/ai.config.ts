@@ -1,6 +1,7 @@
 import { AIConfig } from './ai.types';
 import { supabase, isSupabaseConfigured } from '../supabase';
 import { decryptData } from '../../utils/encryption';
+import { logger } from '../../utils/logger';
 
 export const getAIConfig = (): AIConfig => {
   const provider = import.meta.env.VITE_AI_PROVIDER || 'flow';
@@ -43,16 +44,16 @@ export const getAIConfig = (): AIConfig => {
 export async function getAIConfigWithUserPreferences(userId?: string): Promise<AIConfig> {
   const baseConfig = getAIConfig();
   
-  console.log('🔧 getAIConfigWithUserPreferences called with userId:', userId);
+  logger.log('🔧 getAIConfigWithUserPreferences called with userId:', userId);
   
   // If no Supabase or no user, return base config
   if (!isSupabaseConfigured() || !userId) {
-    console.log('⚠️ No Supabase or no userId, returning base config');
+    logger.log('⚠️ No Supabase or no userId, returning base config');
     return baseConfig;
   }
   
   try {
-    console.log('📡 Fetching user preferences from Supabase...');
+    logger.log('📡 Fetching user preferences from Supabase...');
     // Fetch user preferences from Supabase
     const { data, error } = await supabase
       .from('user_preferences')
@@ -61,11 +62,11 @@ export async function getAIConfigWithUserPreferences(userId?: string): Promise<A
       .single();
     
     if (error || !data) {
-      console.log('⚠️ No user preferences found, using base config. Error:', error);
+      logger.log('⚠️ No user preferences found, using base config. Error:', error);
       return baseConfig;
     }
     
-    console.log('✅ User preferences found:', { hasProvider: !!data.ai_provider, hasCredentials: !!data.ai_credentials });
+    logger.log('✅ User preferences found:', { hasProvider: !!data.ai_provider, hasCredentials: !!data.ai_credentials });
     
     // Override provider if set
     const provider = data.ai_provider || baseConfig.provider;
@@ -74,10 +75,10 @@ export async function getAIConfigWithUserPreferences(userId?: string): Promise<A
     if (data.ai_credentials && typeof data.ai_credentials === 'string') {
       try {
         const credentials = await decryptData(data.ai_credentials, userId);
-        console.log('🔓 Credentials decrypted:', { hasFlow: !!credentials.flow, hasOpenAI: !!credentials.openai });
+        logger.log('🔓 Credentials decrypted:', { hasFlow: !!credentials.flow, hasOpenAI: !!credentials.openai });
         
         if (provider === 'flow' && credentials.flow) {
-          console.log('✅ Using Flow credentials from user preferences');
+          logger.log('✅ Using Flow credentials from user preferences');
           return {
             ...baseConfig,
             provider: 'flow',

@@ -5,6 +5,7 @@
 
 import { type ReactElement, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { logger } from '../utils/logger';
 import { useProjectStore } from '../store/projectStore';
 import { useDiagramStore } from '../store/diagramStore';
 import { useProjectPermissions } from '../hooks/useProjectPermissions';
@@ -136,7 +137,7 @@ export function ProjectPage(): ReactElement {
 
   useEffect(() => {
     if (projectId) {
-      console.log('🔄 Switching to project:', projectId);
+      logger.log('🔄 Switching to project:', projectId);
       
       // Clear current folder and diagrams when switching projects
       setCurrentFolder(null);
@@ -147,12 +148,12 @@ export function ProjectPage(): ReactElement {
         try {
           await fetchProject(projectId);
           await fetchFolders(projectId);
-          console.log('✅ Project data loaded');
+          logger.log('✅ Project data loaded');
           
           // Auto-select first folder AFTER folders are loaded
           // Get fresh folders from store
           const currentFolders = useProjectStore.getState().folders;
-          console.log('🔄 Auto-selecting first folder...', { foldersCount: currentFolders.length });
+          logger.log('🔄 Auto-selecting first folder...', { foldersCount: currentFolders.length });
           
           if (currentFolders.length > 0) {
             // Find first root folder (no parent)
@@ -161,7 +162,7 @@ export function ProjectPage(): ReactElement {
               .sort((a, b) => a.sort_order - b.sort_order)[0];
             
             const folderToSelect = firstRootFolder || currentFolders[0];
-            console.log('✅ Setting current folder:', folderToSelect.name);
+            logger.log('✅ Setting current folder:', folderToSelect.name);
             setCurrentFolder(folderToSelect);
           }
         } catch (error) {

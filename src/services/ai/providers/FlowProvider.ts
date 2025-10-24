@@ -5,6 +5,7 @@ import {
   FlowConfig,
   AIError,
 } from '../ai.types';
+import { logger } from '../../../utils/logger';
 
 export class FlowProvider extends BaseAIProvider {
   readonly name = 'flow';
@@ -21,8 +22,8 @@ export class FlowProvider extends BaseAIProvider {
   
   async chatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     try {
-      console.log('🌊 FlowProvider.chatCompletion called');
-      console.log('📦 FlowProvider config:', {
+      logger.log('🌊 FlowProvider.chatCompletion called');
+      logger.log('📦 FlowProvider config:', {
         hasClientId: !!this.config.clientId,
         hasClientSecret: !!this.config.clientSecret,
         hasTenant: !!this.config.tenant,
@@ -45,26 +46,26 @@ export class FlowProvider extends BaseAIProvider {
       // Add Flow credentials from config if available (from user preferences)
       if (this.config.clientId) {
         headers['X-Flow-Client-Id'] = this.config.clientId;
-        console.log('✅ Added X-Flow-Client-Id header');
+        logger.log('✅ Added X-Flow-Client-Id header');
       } else {
-        console.log('⚠️ No clientId in config');
+        logger.log('⚠️ No clientId in config');
       }
       if (this.config.clientSecret) {
         headers['X-Flow-Client-Secret'] = this.config.clientSecret;
-        console.log('✅ Added X-Flow-Client-Secret header');
+        logger.log('✅ Added X-Flow-Client-Secret header');
       } else {
-        console.log('⚠️ No clientSecret in config');
+        logger.log('⚠️ No clientSecret in config');
       }
       if (this.config.tenant) {
         headers['X-Flow-Tenant'] = this.config.tenant;
-        console.log('✅ Added X-Flow-Tenant header');
+        logger.log('✅ Added X-Flow-Tenant header');
       }
       if (this.config.agent) {
         headers['X-Flow-Agent'] = this.config.agent;
-        console.log('✅ Added X-Flow-Agent header');
+        logger.log('✅ Added X-Flow-Agent header');
       }
       
-      console.log('📤 Sending request to proxy with headers:', Object.keys(headers));
+      logger.log('📤 Sending request to proxy with headers:', Object.keys(headers));
       
       const response = await fetch(proxyUrl, {
         method: 'POST',

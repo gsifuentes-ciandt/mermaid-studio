@@ -25,6 +25,7 @@ import {
   extractDiagramType
 } from './ai.utils';
 import { errorTrackingService } from '../errorTracking.service';
+import { logger } from '../../utils/logger';
 
 export class AIService {
   private provider: IAIProvider;
@@ -38,7 +39,7 @@ export class AIService {
     const fallbackProviderType = import.meta.env.VITE_AI_FALLBACK_PROVIDER;
     if (fallbackProviderType && fallbackProviderType !== AI_CONFIG.provider) {
       // Note: Fallback would need full config - simplified for MVP
-      console.log('Fallback provider configured:', fallbackProviderType);
+      logger.log('Fallback provider configured:', fallbackProviderType);
     }
   }
   
@@ -46,25 +47,25 @@ export class AIService {
    * Sets the current user and reloads AI config with user preferences
    */
   async setUser(userId: string | undefined) {
-    console.log('🤖 AIService.setUser called with userId:', userId);
+    logger.log('🤖 AIService.setUser called with userId:', userId);
     this.currentUserId = userId;
     
     if (userId) {
       // Reload config with user preferences
-      console.log('📥 Loading user config for userId:', userId);
+      logger.log('📥 Loading user config for userId:', userId);
       const userConfig = await getAIConfigWithUserPreferences(userId);
-      console.log('📦 User config loaded:', { 
+      logger.log('📦 User config loaded:', { 
         provider: userConfig.provider, 
         hasFlowConfig: !!userConfig.flow,
         hasFlowClientId: !!userConfig.flow?.clientId,
         hasFlowClientSecret: !!userConfig.flow?.clientSecret
       });
       this.provider = ProviderFactory.createProvider(userConfig);
-      console.log('✅ AI provider reloaded with user preferences');
+      logger.log('✅ AI provider reloaded with user preferences');
     } else {
       // Reset to base config
       this.provider = ProviderFactory.createProvider(AI_CONFIG);
-      console.log('✅ AI provider reset to base config');
+      logger.log('✅ AI provider reset to base config');
     }
   }
   
@@ -101,17 +102,17 @@ export class AIService {
       });
       
       const content = response.choices[0].message.content;
-      console.log('📝 Raw AI response length:', content.length);
-      console.log('📝 Response preview:', content.substring(0, 300));
+      logger.log('📝 Raw AI response length:', content.length);
+      logger.log('📝 Response preview:', content.substring(0, 300));
       
       const code = extractMermaidCode(content);
-      console.log('📊 Extracted Mermaid code length:', code?.length || 0);
-      console.log('📊 Code is empty?', !code || code.trim().length === 0);
+      logger.log('📊 Extracted Mermaid code length:', code?.length || 0);
+      logger.log('📊 Code is empty?', !code || code.trim().length === 0);
       
       // Only validate if code was extracted and is not empty
       if (code && code.trim().length > 0) {
-        console.log('🔍 Validating Mermaid code...');
-        console.log('🔍 First 200 chars:', code.substring(0, 200));
+        logger.log('🔍 Validating Mermaid code...');
+        logger.log('🔍 First 200 chars:', code.substring(0, 200));
         
         // Validate Mermaid syntax
         try {
@@ -119,7 +120,7 @@ export class AIService {
           if (!validation.isValid) {
             console.error('❌ Invalid Mermaid code:');
             console.error('─'.repeat(80));
-            console.log(code);
+            logger.log(code);
             console.error('─'.repeat(80));
             throw new Error(`Generated invalid Mermaid syntax: ${validation.error || 'Unknown error'}`);
           }
@@ -128,16 +129,16 @@ export class AIService {
           throw validationError;
         }
         
-        console.log('✅ Mermaid syntax validated successfully');
+        logger.log('✅ Mermaid syntax validated successfully');
       } else {
-        console.log('ℹ️ No Mermaid code in response - AI provided explanation only');
+        logger.log('ℹ️ No Mermaid code in response - AI provided explanation only');
       }
       
       // Log raw content for debugging
-      console.log('📄 Raw AI response:');
-      console.log('─'.repeat(80));
-      console.log(content);
-      console.log('─'.repeat(80));
+      logger.log('📄 Raw AI response:');
+      logger.log('─'.repeat(80));
+      logger.log(content);
+      logger.log('─'.repeat(80));
       
       // Extract metadata from response
       const title = extractTitle(content);
@@ -149,19 +150,19 @@ export class AIService {
         explanation = content.trim();
       }
       
-      console.log('📝 Extracted metadata:');
-      console.log('  - Title:', title || '(not found)');
-      console.log('  - Description:', description || '(not found)');
-      console.log('  - Explanation length:', explanation?.length || 0);
+      logger.log('📝 Extracted metadata:');
+      logger.log('  - Title:', title || '(not found)');
+      logger.log('  - Description:', description || '(not found)');
+      logger.log('  - Explanation length:', explanation?.length || 0);
       
       // Extract diagram type from AI response, fallback to request type
       const extractedType = extractDiagramType(content);
       const finalType = (extractedType || request.type) as any;
       
-      console.log('🏷️  Diagram Type:');
-      console.log('  - Requested:', request.type);
-      console.log('  - Extracted:', extractedType || '(not found)');
-      console.log('  - Final:', finalType);
+      logger.log('🏷️  Diagram Type:');
+      logger.log('  - Requested:', request.type);
+      logger.log('  - Extracted:', extractedType || '(not found)');
+      logger.log('  - Final:', finalType);
       
       // Warn if AI didn't follow type instruction
       if (extractedType && extractedType !== request.type) {
@@ -179,18 +180,18 @@ export class AIService {
         typeSpecificData.requestPayloads = extractRequestPayloads(content);
         typeSpecificData.responsePayloads = extractResponsePayloads(content);
         
-        console.log('📡 Endpoint-specific fields:');
-        console.log('  - HTTP Method:', typeSpecificData.httpMethod || '(not found)');
-        console.log('  - Endpoint Path:', typeSpecificData.endpointPath || '(not found)');
-        console.log('  - Request Payloads:', typeSpecificData.requestPayloads?.length || 0);
-        console.log('  - Response Payloads:', typeSpecificData.responsePayloads?.length || 0);
+        logger.log('📡 Endpoint-specific fields:');
+        logger.log('  - HTTP Method:', typeSpecificData.httpMethod || '(not found)');
+        logger.log('  - Endpoint Path:', typeSpecificData.endpointPath || '(not found)');
+        logger.log('  - Request Payloads:', typeSpecificData.requestPayloads?.length || 0);
+        logger.log('  - Response Payloads:', typeSpecificData.responsePayloads?.length || 0);
       } else if (finalType === 'workflow') {
         typeSpecificData.workflowActors = extractWorkflowActors(content);
         typeSpecificData.workflowTrigger = extractWorkflowTrigger(content);
         
-        console.log('🔄 Workflow-specific fields:');
-        console.log('  - Actors:', typeSpecificData.workflowActors || '(not found)');
-        console.log('  - Trigger:', typeSpecificData.workflowTrigger || '(not found)');
+        logger.log('🔄 Workflow-specific fields:');
+        logger.log('  - Actors:', typeSpecificData.workflowActors || '(not found)');
+        logger.log('  - Trigger:', typeSpecificData.workflowTrigger || '(not found)');
       }
       
       return {
@@ -379,7 +380,7 @@ export class AIService {
       
       const analysis = JSON.parse(jsonStr);
       
-      console.log('🧠 Intent Analysis:', analysis);
+      logger.log('🧠 Intent Analysis:', analysis);
       
       return {
         isQuestion: analysis.isQuestion || false,

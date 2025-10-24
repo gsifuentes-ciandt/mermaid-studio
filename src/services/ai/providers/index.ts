@@ -2,6 +2,7 @@ import { IAIProvider } from './AIProvider.interface';
 import { FlowProvider } from './FlowProvider';
 import { OpenAIProvider } from './OpenAIProvider';
 import { AIConfig, AIProvider as AIProviderType } from '../ai.types';
+import { logger } from '../../../utils/logger';
 
 export class ProviderFactory {
   private static providers: Map<AIProviderType, IAIProvider> = new Map();
@@ -9,7 +10,7 @@ export class ProviderFactory {
   static createProvider(config: AIConfig): IAIProvider {
     // ALWAYS create a new provider to ensure fresh config
     // Don't use cache because config can change (user preferences)
-    console.log('🏭 ProviderFactory.createProvider called with provider:', config.provider);
+    logger.log('🏭 ProviderFactory.createProvider called with provider:', config.provider);
     
     let provider: IAIProvider;
     
@@ -18,7 +19,7 @@ export class ProviderFactory {
         if (!config.flow) {
           throw new Error('Flow configuration is required');
         }
-        console.log('🏭 Creating FlowProvider with config:', {
+        logger.log('🏭 Creating FlowProvider with config:', {
           hasClientId: !!config.flow.clientId,
           hasClientSecret: !!config.flow.clientSecret,
           clientIdLength: config.flow.clientId?.length || 0
